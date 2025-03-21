@@ -30,11 +30,12 @@ class HomeController extends Controller
                     'category' => $product->category->name,
                     'price' => $product->price,
                     'stock' => $product->stock,
-                    'image' => $product->product_images->first() ?? null,
+                    'image' => $product->product_images[0] ?? null,
                     'specifications' => $product->specifications
                 ];
             })
-            ->random(0);
+            ->shuffle()
+            ->values();
         $latestProducts = Product::with(['category', 'brand', 'specifications'])
             ->latest()
             ->take(0)
@@ -48,7 +49,7 @@ class HomeController extends Controller
                     'category' => $product->category->name,
                     'price' => $product->price,
                     'stock' => $product->stock,
-                    'image' => $product->product_images->first() ?? null,
+                    'image' => $product->product_images[0] ?? null,
                     'specifications' => $product->specifications
                         ->map(fn($spec) => [
                             'name' => $spec->name,
