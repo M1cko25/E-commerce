@@ -33,7 +33,7 @@ class HomeController extends Controller
                     'specifications' => $product->specifications
                 ];
             })
-            ->random(0);
+            ->whenNotEmpty(fn($collection) => $collection->random(min(5, $collection->count())));
         $latestProducts = Product::with(['category', 'brand', 'specifications'])
             ->latest()
             ->take(0)
