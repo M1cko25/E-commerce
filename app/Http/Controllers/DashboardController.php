@@ -20,7 +20,7 @@ class DashboardController extends Controller
 
         // Get monthly revenue data for chart
         $monthlyRevenue = Orders::select(
-            DB::raw('DATE_FORMAT(created_at, "%Y-%m") as month'),
+            DB::raw('TO_CHAR(created_at, "YYYY-MM") as month'),
             DB::raw('SUM(total_amount) as total')
         )
             ->where('created_at', '>=', Carbon::now()->subMonths(6))
