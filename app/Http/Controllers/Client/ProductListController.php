@@ -9,6 +9,7 @@ use App\Models\Category;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class ProductListController extends Controller
 {
@@ -33,24 +34,28 @@ class ProductListController extends Controller
 
         $filteredProductIds = (clone $query)->pluck('id');
 
-        $categories = Category::select(['id', 'name'])
-            ->whereHas('products', function($q) use ($filteredProductIds) {
-                $q->whereIn('id', $filteredProductIds);
-            })
-            ->withCount(['products' => function($q) use ($filteredProductIds) {
-                $q->whereIn('id', $filteredProductIds);
-            }])
-            ->having('products_count', '>', 0)
+        $categories = Category::select(['categories.id', 'categories.name'])
+            ->leftJoin('products', 'categories.id', '=', 'products.category_id')
+            ->whereIn('products.id', $filteredProductIds)
+            ->groupBy('categories.id', 'categories.name')
+            ->select([
+                'categories.id',
+                'categories.name',
+                DB::raw('COUNT(products.id) as products_count')
+            ])
+            ->havingRaw('COUNT(products.id) > 0')
             ->get();
 
-        $brands = Brand::select(['id', 'name'])
-            ->whereHas('products', function($q) use ($filteredProductIds) {
-                $q->whereIn('id', $filteredProductIds);
-            })
-            ->withCount(['products' => function($q) use ($filteredProductIds) {
-                $q->whereIn('id', $filteredProductIds);
-            }])
-            ->having('products_count', '>', 0)
+        $brands = Brand::select(['brands.id', 'brands.name'])
+            ->leftJoin('products', 'brands.id', '=', 'products.brand_id')
+            ->whereIn('products.id', $filteredProductIds)
+            ->groupBy('brands.id', 'brands.name')
+            ->select([
+                'brands.id',
+                'brands.name',
+                DB::raw('COUNT(products.id) as products_count')
+            ])
+            ->havingRaw('COUNT(products.id) > 0')
             ->get();
 
         $products = $query->paginate(16);
