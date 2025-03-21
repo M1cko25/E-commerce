@@ -52,7 +52,7 @@
                 <td class="px-6 py-4 whitespace-nowrap">{{ brand.name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <img
-                    :src="brand.image ? '/public/storage/' + brand.image : ''"
+                    :src="brand.image ? '/storage/' + brand.image : 'storage/default.jpg'"
                     class="h-10 w-24 object-cover rounded-md shadow-sm"
                   />
                 </td>
