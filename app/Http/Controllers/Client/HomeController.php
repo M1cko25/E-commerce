@@ -9,6 +9,8 @@ use App\Models\Brand;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\LandingContent;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
@@ -55,7 +57,7 @@ class HomeController extends Controller
                         ])
                 ];
             });
-
+        Log::info(Storage::exists('public/storage/categoryImages/H3RbmmCAlPTMKWaQxdGtA71oJrSnngsaZo0WcPsV.png'));
         return Inertia::render('ClientSide/GuestHome', [
             'exploreProducts' => $exploreProducts,
             'latestProducts' => $latestProducts,

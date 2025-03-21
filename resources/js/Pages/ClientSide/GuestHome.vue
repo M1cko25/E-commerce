@@ -533,7 +533,9 @@ onBeforeUnmount(() => {
             >
               <div class="bg-navy-800 rounded-lg overflow-hidden">
                 <img
-                  :src="category.image"
+                  :src="
+                    category.image ? '/storage/' + category.image : 'storage/default.jpg'
+                  "
                   :alt="category.name"
                   class="w-full h-48 object-contain"
                 />
