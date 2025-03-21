@@ -9,12 +9,14 @@ use App\Models\Brand;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\LandingContent;
+use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
+        try {
+            $categories = Category::all();
         $brands = Brand::all();
         $landingContents = LandingContent::where('is_active', 1)->get();
         $exploreProducts = Product::with(['category', 'brand', 'specifications'])
@@ -63,5 +65,9 @@ class HomeController extends Controller
             'brands' => $brands,
             'landingContents' => $landingContents
         ]);
+        } catch (\Exception $e) {
+            Log::error('Error in HomeController@index: ' . $e->getMessage());
+            return redirect()->route('home')->with('error', 'An error occurred while loading the home page.');
+        }
     }
 }
