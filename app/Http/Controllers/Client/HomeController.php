@@ -15,8 +15,7 @@ class HomeController extends Controller
 {
     public function index()
     {
-        try {
-            $categories = Category::all();
+        $categories = Category::all();
         $brands = Brand::all();
         $landingContents = LandingContent::where('is_active', 1)->get();
         $exploreProducts = Product::with(['category', 'brand', 'specifications'])
@@ -65,9 +64,5 @@ class HomeController extends Controller
             'brands' => $brands,
             'landingContents' => $landingContents
         ]);
-        } catch (\Exception $e) {
-            Log::error('Error in HomeController@index: ' . $e->getMessage());
-            return redirect()->route('home')->with('error', 'An error occurred while loading the home page.');
-        }
     }
 }
