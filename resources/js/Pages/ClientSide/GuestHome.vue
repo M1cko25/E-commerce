@@ -432,8 +432,8 @@ onBeforeUnmount(() => {
                   <img
                     :src="
                       latestProduct.image
-                        ? '/storage/' + latestProduct.image
-                        : 'storage/default.jpg'
+                        ? '/public/storage/' + latestProduct.image
+                        : ''
                     "
                     :alt="latestProduct.name"
                     class="w-full h-28 sm:h-32 md:h-36 lg:h-40 object-cover rounded-lg"
@@ -534,7 +534,7 @@ onBeforeUnmount(() => {
               <div class="bg-navy-800 rounded-lg overflow-hidden">
                 <img
                   :src="
-                    category.image ? '/storage/' + category.image : 'storage/default.jpg'
+                    category.image ? '/public/storage/' + category.image : ''
                   "
                   :alt="category.name"
                   class="w-full h-48 object-contain"
