@@ -9,7 +9,6 @@ use App\Models\Brand;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\LandingContent;
-use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
@@ -34,8 +33,7 @@ class HomeController extends Controller
                     'specifications' => $product->specifications
                 ];
             })
-            ->shuffle()
-            ->values();
+            ->random(0);
         $latestProducts = Product::with(['category', 'brand', 'specifications'])
             ->latest()
             ->take(0)
