@@ -208,7 +208,7 @@
     <!-- Footer -->
     <footer class="footer-color">
       <div class="mx-auto max-w-7xl px-4 py-4">
-        <p class="text-center text-sm text-gray-500">Artzwork PC © 2024</p>
+        <p class="text-center text-sm text-gray-500">DRM © 2025</p>
       </div>
     </footer>
   </div>
