@@ -9,8 +9,6 @@ use App\Models\Brand;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use App\Models\LandingContent;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Log;
 
 class HomeController extends Controller
 {
@@ -20,7 +18,7 @@ class HomeController extends Controller
         $brands = Brand::all();
         $landingContents = LandingContent::where('is_active', 1)->get();
         $exploreProducts = Product::with(['category', 'brand', 'specifications'])
-            ->take(0)
+            ->take(7)
             ->get()
             ->map(function ($product) {
                 return [
@@ -35,10 +33,10 @@ class HomeController extends Controller
                     'specifications' => $product->specifications
                 ];
             })
-            ->random(0);
+            ->random(7);
         $latestProducts = Product::with(['category', 'brand', 'specifications'])
             ->latest()
-            ->take(0)
+            ->take(7)
             ->get()
             ->map(function ($product) {
                 return [
@@ -57,7 +55,6 @@ class HomeController extends Controller
                         ])
                 ];
             });
-        Log::info(Storage::exists('public/storage/categoryImages/H3RbmmCAlPTMKWaQxdGtA71oJrSnngsaZo0WcPsV.png'));
         return Inertia::render('ClientSide/GuestHome', [
             'exploreProducts' => $exploreProducts,
             'latestProducts' => $latestProducts,

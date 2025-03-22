@@ -33,17 +33,15 @@ class CategoryController extends Controller
     {
         $request->merge([
             'slug' => str()->slug($request->input('name')),
-            'sku' => strtoupper( // Generate SKU
+            'sku' => strtoupper(
                 preg_replace('/[aeiou\s]/i', '', $request->input('name'))
             )
         ]);
 
-        // Limit SKU to first 3 characters
         $request->merge([
             'sku' => substr($request->input('sku'), 0, 3),
         ]);
 
-        //Validate
         $categoryFields = $request->validate([
             'image' => ['nullable', 'file', 'max:10240'],
             'name' => ['required', 'max:255'],
@@ -53,16 +51,25 @@ class CategoryController extends Controller
             'specifications.*' => ['nullable', 'string', 'max:255'],
         ]);
 
-        //Image
-
         if ($request->hasFile('image')) {
+            try {
+                $file = $request->file('image');
+                $filename = time() . '_' . $file->getClientOriginalName();
 
-            // $imagePath = $request->file('image')->store('categoryImages', 'public');
-            // $categoryFields['image'] = $imagePath;
+                // Store the file and get the path
+                $path = Storage::disk('public')->putFileAs(
+                    'categoryImages',
+                    $file,
+                    $filename
+                );
 
-            $categoryFields['image'] = Storage::disk('public')->put('categoryImages', $request->image);
+                $categoryFields['image'] = $path;
+            } catch (\Exception $e) {
+                Log::error('Image upload failed: ' . $e->getMessage());
+                return back()->withErrors(['image' => 'Failed to upload image. Please try again.']);
+            }
         }
-        //Store
+
         $category = Category::create($categoryFields);
 
         if (!empty($categoryFields['specifications'])) {
@@ -73,7 +80,6 @@ class CategoryController extends Controller
             }
         }
 
-        //Redirect
         return redirect()->route('categories.index')
             ->with('message', 'Category created successfully')
             ->with('type', 'success');
@@ -123,39 +129,49 @@ class CategoryController extends Controller
                 : $category->sku,
         ]);
 
-        // Limit SKU to first 3 characters
         $request->merge([
             'sku' => substr($request->input('sku'), 0, 3),
         ]);
 
-        // Validate the request
         $categoryFields = $request->validate([
             'image' => ['nullable', 'file', 'max:10240'],
             'name' => ['required', 'max:255'],
             'slug' => ['required', 'max:255', 'unique:categories,slug,' . $category->id],
             'sku' => ['required', 'max:3', 'unique:categories,sku,' . $category->id],
-            'specifications' => ['nullable', 'array'], // Specifications as array
-            'specifications.*.id' => ['nullable', 'integer'], // Validate IDs for existing specifications
-            'specifications.*.name' => ['nullable', 'string', 'max:255'], // Validate names for all specifications
+            'specifications' => ['nullable', 'array'],
+            'specifications.*.id' => ['nullable', 'integer'],
+            'specifications.*.name' => ['nullable', 'string', 'max:255'],
         ]);
 
-    //Image
-
         if ($request->hasFile('image')) {
-            if ($category->image) {
-                Storage::disk('public')->delete($category->image);
-            }
+            try {
+                // Delete old image if it exists
+                if ($category->image) {
+                    Storage::disk('public')->delete($category->image);
+                }
 
-            $categoryFields['image'] = Storage::disk('public')->put('categoryImages', $request->image);
+                $file = $request->file('image');
+                $filename = time() . '_' . $file->getClientOriginalName();
+
+                // Store the file and get the path
+                $path = Storage::disk('public')->putFileAs(
+                    'categoryImages',
+                    $file,
+                    $filename
+                );
+
+                $categoryFields['image'] = $path;
+            } catch (\Exception $e) {
+                Log::error('Image upload failed: ' . $e->getMessage());
+                return back()->withErrors(['image' => 'Failed to upload image. Please try again.']);
+            }
         } else {
             $categoryFields['image'] = $category->image;
         }
 
         $category->update($categoryFields);
 
-
-
-    // Update specifications
+        // Update specifications
         $existingIds = $category->specifications()->pluck('id')->toArray(); // Get current specification IDs
         $updatedIds = []; // To track IDs that were updated or added
 
