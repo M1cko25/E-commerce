@@ -37,16 +37,6 @@ import Logo from "@/Pages/ClientSide/assets/DRMLogo.png";
           <h3 class="text-lg font-bold mb-4">QUICK LINKS</h3>
           <ul class="space-y-2">
             <li>
-              <Link href="#" class="text-gray-400 hover:text-white"
-                >DRM Shopee</Link
-              >
-            </li>
-            <li>
-              <Link href="#" class="text-gray-400 hover:text-white"
-                >DRM Lazada</Link
-              >
-            </li>
-            <li>
               <Link href="#" class="text-gray-400 hover:text-white">Privacy Policy</Link>
             </li>
             <li><Link href="#" class="text-gray-400 hover:text-white">FAQ</Link></li>

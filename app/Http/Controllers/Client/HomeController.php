@@ -18,7 +18,7 @@ class HomeController extends Controller
         $brands = Brand::all();
         $landingContents = LandingContent::where('is_active', 1)->get();
         $exploreProducts = Product::with(['category', 'brand', 'specifications'])
-            ->take(8)
+            ->take(7)
             ->get()
             ->map(function ($product) {
                 return [
@@ -33,10 +33,10 @@ class HomeController extends Controller
                     'specifications' => $product->specifications
                 ];
             })
-            ->random(8);
+            ->random(7);
         $latestProducts = Product::with(['category', 'brand', 'specifications'])
             ->latest()
-            ->take(8)
+            ->take(5)
             ->get()
             ->map(function ($product) {
                 return [
@@ -55,12 +55,18 @@ class HomeController extends Controller
                         ])
                 ];
             });
+
+        $chatId = 0;
+        if (session()->has('chat_id')) {
+            $chatId = session('chat_id');
+        }
         return Inertia::render('ClientSide/GuestHome', [
             'exploreProducts' => $exploreProducts,
             'latestProducts' => $latestProducts,
             'categories' => $categories,
             'brands' => $brands,
-            'landingContents' => $landingContents
+            'landingContents' => $landingContents,
+            'chatId' => $chatId
         ]);
     }
 }

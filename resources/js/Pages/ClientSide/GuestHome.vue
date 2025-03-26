@@ -149,32 +149,53 @@ const addToCart = (product) => {
   );
 };
 
-// Add these new refs
 const showChatWindow = ref(false);
 const chatMessages = ref([]);
 const userInput = ref('');
-const { sendPrompt, isLoading, clearConversation } = useAI();
+const { sendPrompt, isLoading, error, clearConversation, fetchChatHistory, loadConversation, deleteConversation, chatHistory, loadingHistory, conversationHistory, currentChatId } = useAI();
 const chatWindowSize = ref({ width: 320, height: 450 });
 const isDragging = ref(false);
 const startPosition = ref({ x: 0, y: 0 });
 const chatContainerRef = ref(null);
+const showHistory = ref(false);
 
-// Replace toggleChatWindow method with this
 const toggleChatWindow = () => {
-  if (!showChatWindow.value) {
-    showChatWindow.value = true;
-    if (chatMessages.value.length === 0) {
-      // Add initial greeting
-      chatMessages.value.push({
-        type: 'bot',
-        content: 'Hello! I am Chatter, your AI assistant. How can I help you today with our roofing, glass, and iron works products?'
-      });
-    }
-  } else {
-    showChatWindow.value = false;
-    // Clear conversation history when closing the chat
-    clearConversation();
-    chatMessages.value = [];
+  showChatWindow.value = !showChatWindow.value;
+
+  if (showChatWindow.value && chatMessages.value.length === 0) {
+    // Add initial greeting only if it's a fresh conversation
+    chatMessages.value.push({
+      type: 'bot',
+      content: 'Hello! I am Chatter, your AI assistant for DRM Roofing, Glass, and Iron Works. I can help you with:<br><br>• Finding products in our catalog<br>• Providing product information and prices<br>• Directing you to product pages<br>• Answering questions about our services<br><br>Try asking me something like "Show me roofing products" or "Find glass doors"!'
+    });
+  }
+};
+
+const openNewChat = () => {
+  showHistory.value = false;
+  chatMessages.value = [{
+    type: 'bot',
+    content: 'Hello! I am Chatter, your AI assistant for DRM Roofing, Glass, and Iron Works. I can help you with:<br><br>• Finding products in our catalog<br>• Providing product information and prices<br>• Directing you to product pages<br>• Answering questions about our services<br><br>Try asking me something like "Show me roofing products" or "Find glass doors"!'
+  }];
+  clearConversation();
+};
+
+const toggleHistory = async () => {
+  showHistory.value = !showHistory.value;
+  if (showHistory.value) {
+    await fetchChatHistory();
+  }
+};
+
+const loadHistoryConversation = async (promptId) => {
+  const success = await loadConversation(promptId);
+  if (success) {
+    showHistory.value = false;
+    // Convert the conversation history to chat messages format
+    chatMessages.value = conversationHistory.value.map(msg => ({
+      type: msg.role === 'user' ? 'user' : 'bot',
+      content: msg.content
+    }));
   }
 };
 
@@ -190,16 +211,13 @@ const sendMessage = async () => {
   userInput.value = '';
 
   try {
-    const response = await sendPrompt(userMessage);
+    const response = await sendPrompt(userMessage, currentChatId.value);
     if (response) {
-      // Format the response to handle line breaks and lists
-      const formattedResponse = response
-        .replace(/\n/g, '<br>')
-        .replace(/•/g, '&bull;');
-
+      // The response is already formatted with HTML by the server
+      // Just ensure any line breaks that aren't in HTML tags are converted properly
       chatMessages.value.push({
         type: 'bot',
-        content: formattedResponse
+        content: response
       });
 
       // Scroll to the bottom of the chat
@@ -267,6 +285,19 @@ onBeforeUnmount(() => {
   document.removeEventListener('mousemove', handleResize);
   document.removeEventListener('mouseup', stopResize);
 });
+
+// Add this new function to handle conversation deletion
+const deleteHistoryConversation = async (event, promptId) => {
+  // Stop the click event from propagating to the parent (which would load the conversation)
+  event.stopPropagation();
+
+  if (await deleteConversation(promptId)) {
+    // If the current history is empty after deletion, close the history panel
+    if (Object.keys(chatHistory.value).length === 0) {
+      showHistory.value = false;
+    }
+  }
+};
 </script>
 
 <template>
@@ -699,7 +730,7 @@ onBeforeUnmount(() => {
     />
 
     <!-- Replace the Floating Messenger Icon section with this -->
-    <div class="fixed bottom-6 right-6 z-50">
+    <div v-if="page.props.auth && page.props.auth.customer" class="fixed bottom-6 right-6 z-50">
       <!-- Chat Window -->
       <div v-if="showChatWindow"
            ref="chatContainerRef"
@@ -711,16 +742,33 @@ onBeforeUnmount(() => {
              minHeight: '400px'
            }">
         <!-- Chat Header -->
-        <div class="bg-navy-600 text-white p-4 flex justify-between items-center">
+        <div class="bg-navy-600 text-white p-3 flex justify-between items-center">
           <div class="flex items-center space-x-2">
             <MessageCircle class="h-5 w-5" />
             <span class="font-medium">Chatter AI</span>
           </div>
-          <button @click="toggleChatWindow" class="hover:text-gray-300">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-              <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-            </svg>
-          </button>
+          <div class="flex items-center space-x-2">
+            <!-- New Chat button -->
+            <button @click="openNewChat" class="text-sm bg-navy-700 hover:bg-navy-800 rounded-md px-2 py-1" title="New Chat">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+              </svg>
+            </button>
+
+            <!-- History button -->
+            <button @click="toggleHistory" class="text-sm bg-navy-700 hover:bg-navy-800 rounded-md px-2 py-1" title="Chat History">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd" />
+              </svg>
+            </button>
+
+            <!-- Close button -->
+            <button @click="toggleChatWindow" class="hover:text-gray-300 flex items-center justify-center p-1">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Resize Handle -->
@@ -729,6 +777,69 @@ onBeforeUnmount(() => {
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-4 h-4 text-gray-400">
             <path d="M16 2H8v2h8V2zm0 7h8v2h-8V9zm0 7h8v2h-8v-2zm0 7h8v2h-8v-2z" />
           </svg>
+        </div>
+
+        <!-- Chat History Panel -->
+        <div v-if="showHistory" class="absolute inset-0 bg-white z-40 flex flex-col" style="top: 48px;">
+          <div class="p-3 flex justify-between items-center border-b">
+            <h3 class="font-medium text-navy-800">Chat History</h3>
+            <button @click="toggleHistory" class="p-1 hover:bg-gray-100 rounded-full">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="flex-1 overflow-y-auto p-3">
+            <div v-if="loadingHistory" class="flex justify-center py-4">
+              <svg class="animate-spin h-5 w-5 text-navy-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+            </div>
+            <div v-else-if="Object.keys(chatHistory).length === 0" class="text-center text-gray-500 py-8">
+              No chat history found.
+              <div class="mt-2 text-sm">Start a new conversation!</div>
+              <button @click="openNewChat" class="mt-4 px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700">
+                New Conversation
+              </button>
+            </div>
+            <div v-else>
+              <div class="mb-6 flex justify-between items-center">
+                <h4 class="font-medium text-navy-700">Your Conversations</h4>
+                <button @click="openNewChat" class="px-3 py-1 bg-navy-600 text-white text-sm rounded-md hover:bg-navy-700 flex items-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" viewBox="0 0 20 20" fill="currentColor">
+                    <path fill-rule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clip-rule="evenodd" />
+                  </svg>
+                  New Chat
+                </button>
+              </div>
+
+              <div v-for="(chats, date) in chatHistory" :key="date" class="mb-4">
+                <div class="text-xs text-gray-500 mb-2">{{ date }}</div>
+                <div v-for="chat in chats" :key="chat.id"
+                     class="p-3 border rounded-md mb-2 hover:bg-gray-50 cursor-pointer"
+                     @click="loadHistoryConversation(chat.id)">
+                  <div class="flex justify-between items-start">
+                    <div class="text-sm font-medium truncate max-w-[85%]">{{ chat.title }}</div>
+                    <button
+                      @click="(event) => deleteHistoryConversation(event, chat.id)"
+                      class="text-red-500 hover:text-red-700 p-1 rounded-full hover:bg-red-50"
+                      title="Delete conversation"
+                    >
+                      <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" />
+                      </svg>
+                    </button>
+                  </div>
+                  <div class="text-xs text-gray-500 flex justify-between mt-1">
+                    <span>{{ new Date(chat.created_at).toLocaleTimeString() }}</span>
+                    <span class="text-navy-600">Click to view conversation</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- Chat Messages -->
@@ -740,7 +851,7 @@ onBeforeUnmount(() => {
               'bg-navy-600 text-white rounded-lg p-3 max-w-[80%] break-words': message.type === 'user',
               'bg-gray-100 text-gray-800 rounded-lg p-3 max-w-[80%] break-words': message.type === 'bot'
             }"
-            style="min-width: 0;" v-html="message.content">
+            v-html="message.content">
             </div>
           </div>
           <div v-if="isLoading" class="flex items-center space-x-2 text-gray-500">
@@ -838,5 +949,32 @@ onBeforeUnmount(() => {
   width: 15px;
   height: 15px;
   background: linear-gradient(135deg, transparent 50%, #cbd5e0 50%);
+}
+
+/* Message styling improvements */
+:deep(.bg-gray-100) {
+  line-height: 1.5;
+}
+
+:deep(.bg-gray-100 a) {
+  color: #1a237e;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+:deep(.bg-gray-100 strong) {
+  font-weight: 600;
+}
+
+:deep(code) {
+  font-family: monospace;
+  padding: 1px 4px;
+  border-radius: 3px;
+  font-size: 0.9em;
+}
+
+/* Add natural spacing for bullet points */
+:deep(.bg-gray-100) {
+  white-space: pre-line;
 }
 </style>
