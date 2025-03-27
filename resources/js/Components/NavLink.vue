@@ -35,8 +35,8 @@ const searchProducts = () => {
 const navigationItems = [
   { name: "Home", href: "/" },
   { name: "Products", href: "/product-list" },
-  { name: "About", href: "/category-products/laptop" },
-  { name: "Contact Us", href: "/category-products/desktop" },
+  { name: "About", href: "/about" },
+  { name: "Contact Us", href: "/contact" },
 ];
 
 // Get cart count directly from shared props

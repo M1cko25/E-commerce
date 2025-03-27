@@ -43,11 +43,13 @@ Route::middleware(['web'])->group(function () {
     });
 });
 
+Route::get('/about', function () {
+    return Inertia::render('ClientSide/About');
+});
 
-
-
-
-
+Route::get('/contact', function () {
+    return Inertia::render('ClientSide/Contact');
+});
 
 require __DIR__ . '/auth.php';
 require __DIR__ . '/customer-auth.php';
@@ -56,7 +58,3 @@ require __DIR__ . '/ai.php';
 Route::fallback(function () {
     return Inertia::render('Errors/404');
 });
-
-
-
-
