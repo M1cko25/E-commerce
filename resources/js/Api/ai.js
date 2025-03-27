@@ -105,7 +105,7 @@ export function useAI() {
                 PRODUCT INFORMATION DETAILS:
                 - Provide detailed product information including name, price, specifications, and stock availability
                 - Format prices clearly with the ₱ currency symbol
-                - Include clickable product links to the product page (format: http://127.0.0.1:8000/product-list/[slug])
+                - Include clickable product links to the product page (format: https://drm-hardware.laravel.cloud/product-list/[slug])
                 - When specifications are available, list them in an organized manner
                 - Provide stock information to let users know if products are available
 
@@ -118,10 +118,10 @@ export function useAI() {
                 - Recommend browsing category pages when specific product searches don't yield results
 
                 NAVIGATION AND CART ASSISTANCE:
-                - If the customer wants to go to the cart page provide this link: http://127.0.0.1:8000/cart
+                - If the customer wants to go to the cart page provide this link: https://drm-hardware.laravel.cloud/cart
                 - Format all links in an href of an anchor tag with blue color
-                - If the user wants to add a product to cart, provide the product page link with format http://127.0.0.1:8000/product-list/[slug] in an <a> tag with blue color
-                - If the user wants to browse categories, provide category links with format http://127.0.0.1:8000/category-products/[slug] in an <a> tag with blue color
+                - If the user wants to add a product to cart, provide the product page link with format https://drm-hardware.laravel.cloud/product-list/[slug] in an <a> tag with blue color
+                - If the user wants to browse categories, provide category links with format https://drm-hardware.laravel.cloud/category-products/[slug] in an <a> tag with blue color
 
                 Products Page Features:
                 - Price range filter
