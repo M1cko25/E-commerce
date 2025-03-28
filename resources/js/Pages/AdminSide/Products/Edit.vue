@@ -410,7 +410,7 @@ const form = useForm({
   slug: props.product.slug,
   sku: props.product.sku,
   description: props.product.description,
-  price: props.product.variants.length > 0 ? Number(props.product.price) : 0,
+  price: props.product.variants.length == 0 ? props.product.price : 0,
   stock: props.product.stock,
   category_id: props.product.category_id,
   brand_id: props.product.brand_id,
