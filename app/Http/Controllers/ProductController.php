@@ -163,104 +163,98 @@ class ProductController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'slug' => 'required|string|max:255|unique:products,slug,' . $product->id,
+            'sku' => 'required|string|max:255|unique:products,sku,' . $product->id,
             'description' => 'required|string',
-            'price' => 'required|numeric|min:0',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
-            'warranty' => 'required|string|max:255',
-            'sizes' => 'nullable|array',
-            'sizes.*' => 'string',
-            'kinds' => 'nullable|array',
-            'kinds.*' => 'string',
-            'images.*' => 'nullable|file|image|max:10240',
-            'specifications' => 'nullable|array',
-            'specifications.*.id' => 'required|integer|exists:specifications,id',
-            'specifications.*.value' => 'required|string|max:255',
-            'remove_images' => 'nullable|array',
+            'price' => 'required_without:variants|numeric|min:0',
             'variants' => 'array',
             'variants.*.size' => 'required|string',
             'variants.*.kind' => 'nullable|string',
             'variants.*.price' => 'required|numeric|min:0',
+            'specifications' => 'array',
+            'specifications.*.name' => 'required|string',
+            'specifications.*.value' => 'required|string',
+            'remove_images' => 'nullable|array',
         ]);
 
         try {
-            // Handle image deletions first
-            if ($request->remove_images) {
-                foreach ($request->remove_images as $image) {
-                    Storage::disk('public')->delete($image);
-                    $product->product_images = array_diff($product->product_images, [$image]);
-                }
-            }
+            DB::beginTransaction();
 
-            // Handle new image uploads
+            // Handle image uploads
             $newImages = [];
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $newImages[] = $image->store('product_images', 'public');
+                    $imageName = time() . '_' . $image->getClientOriginalName();
+                    $image->storeAs('public/products', $imageName);
+                    $newImages[] = 'products/' . $imageName;
+                }
+            }
+
+            // Handle image removals
+            $currentImages = $product->product_images ?? [];
+            if ($request->has('remove_images')) {
+                foreach ($request->remove_images as $image) {
+                    if (($key = array_search($image, $currentImages)) !== false) {
+                        Storage::delete('public/' . $image);
+                        unset($currentImages[$key]);
+                    }
                 }
             }
 
             // Merge existing and new images
-            $allImages = array_merge($product->product_images ?? [], $newImages);
+            $allImages = array_merge($currentImages, $newImages);
 
             // Set the price from the first variant if variants exist
-            $price = 0;
+            $price = $validated['price'] ?? 0;
             if (!empty($validated['variants'])) {
                 $price = $validated['variants'][0]['price'];
-            } else {
-                $price = $validated['price'];
             }
 
             // Update product with basic information
-            $product->update(array_merge(
-                collect($validated)->except(['sizes', 'kinds', 'variants', 'specifications'])->toArray(),
-                ['product_images' => $allImages, 'price' => $price]
-            ));
+            $product->update([
+                'name' => $validated['name'],
+                'slug' => $validated['slug'],
+                'sku' => $validated['sku'],
+                'description' => $validated['description'],
+                'product_images' => array_values($allImages),
+                'stock' => $validated['stock'],
+                'category_id' => $validated['category_id'],
+                'brand_id' => $validated['brand_id'],
+                'price' => $price
+            ]);
 
             // Update variants
-            // First, delete existing variants
-            $product->variants()->delete();
-
-            // Then create new variants
+            $product->variants()->delete(); // Remove existing variants
             if (!empty($validated['variants'])) {
                 foreach ($validated['variants'] as $variant) {
-                    ProductVariants::create([
-                        'product_id' => $product->id,
+                    $product->variants()->create([
                         'sizes' => $variant['size'],
                         'kinds' => $variant['kind'],
                         'price' => $variant['price']
                     ]);
                 }
-            } elseif (!empty($validated['sizes']) || !empty($validated['kinds'])) {
-                foreach ($validated['sizes'] as $size) {
-                    foreach ($validated['kinds'] ?? [''] as $kind) {
-                        ProductVariants::create([
-                            'product_id' => $product->id,
-                            'sizes' => $size,
-                            'kinds' => $kind ?: null,
-                            'price' => $price
-                        ]);
-                    }
-                }
             }
 
             // Update specifications
-            $product->specifications()->detach();
-
+            $product->specifications()->delete();
             if (!empty($validated['specifications'])) {
                 foreach ($validated['specifications'] as $spec) {
                     ProductSpecification::create([
                         'product_id' => $product->id,
-                        'spec_id' => $spec['id'],
-                        'value' => $spec['value'],
+                        'name' => $spec['name'],
+                        'value' => $spec['value']
                     ]);
                 }
             }
 
-            return redirect()->route('products.index')->with('success', 'Product updated successfully!');
+            DB::commit();
+            return redirect()->route('products.index')->with('success', 'Product updated successfully');
         } catch (\Exception $e) {
-            return back()->withErrors(['error' => $e->getMessage()]);
+            DB::rollBack();
+            return back()->with('error', 'Something went wrong: ' . $e->getMessage());
         }
     }
 

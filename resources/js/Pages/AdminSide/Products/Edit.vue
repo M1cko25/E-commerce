@@ -187,24 +187,20 @@
 
           <!-- Side Panel -->
           <div class="space-y-6">
-            <!-- Price Section -->
-            <div class="bg-white rounded-lg shadow p-6">
+            <!-- Price Section (show only when no variants) -->
+            <div v-if="!hasVariants" class="bg-white rounded-lg shadow p-6">
               <h2 class="text-lg font-medium mb-4">Price</h2>
               <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
                 <input
                   v-model="form.price"
                   type="number"
-                  placeholder="Enter price"
-                  @focus="form.clearErrors('price')"
-                  :class="[
-                    'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
-                    { 'border-red-500': form.errors.price },
-                  ]"
+                  step="0.01"
+                  min="0"
+                  class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  :class="{ 'border-red-500': form.errors.price }"
                 />
-                <small v-show="form.errors.price" class="text-red-700">{{
-                  form.errors.price
-                }}</small>
+                <small v-if="form.errors.price" class="text-red-700">{{ form.errors.price }}</small>
               </div>
             </div>
 
@@ -281,108 +277,88 @@
                     form.errors.brand_id
                   }}</small>
                 </div>
-
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1"
-                    >Warranty</label
-                  >
-                  <input
-                    v-model="form.warranty"
-                    type="text"
-                    placeholder="e.g 12 months"
-                    @focus="form.clearErrors('warranty')"
-                    :class="[
-                      'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
-                      { 'border-red-500': form.errors.warranty },
-                    ]"
-                  />
-                  <small v-show="form.errors.warranty" class="text-red-700">{{
-                    form.errors.warranty
-                  }}</small>
-                </div>
               </div>
             </div>
 
             <!-- Sizes and Kinds Section -->
             <div class="bg-white rounded-lg shadow p-6">
               <h2 class="text-lg font-medium mb-4">Sizes and Kinds</h2>
-              <div class="space-y-4">
-                <!-- Sizes -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Sizes</label>
-                  <div class="flex gap-2 mb-2">
-                    <input
-                      v-model="newSize"
-                      type="text"
-                      placeholder="Add size (e.g., S, M, L)"
-                      class="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      @click="addSize"
-                      class="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700"
-                    >
-                      Add Size
-                    </button>
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <div
-                      v-for="(size, index) in form.sizes"
-                      :key="index"
-                      class="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full"
-                    >
-                      <span class="text-sm">{{ size }}</span>
-                      <button
-                        type="button"
-                        @click="removeSize(index)"
-                        class="text-gray-500 hover:text-red-600"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  </div>
-                  <small v-show="form.errors.sizes" class="text-red-700">{{
-                    form.errors.sizes
-                  }}</small>
+
+              <!-- Sizes -->
+              <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">Sizes</label>
+                <div class="flex gap-2 mb-2">
+                  <input
+                    v-model="newSize"
+                    type="text"
+                    placeholder="Enter size"
+                    class="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    type="button"
+                    @click="addSize"
+                    class="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700"
+                  >
+                    Add
+                  </button>
                 </div>
 
-                <!-- Kinds -->
-                <div>
-                  <label class="block text-sm font-medium text-gray-700 mb-1">Kinds</label>
-                  <div class="flex gap-2 mb-2">
-                    <input
-                      v-model="newKind"
-                      type="text"
-                      placeholder="Add kind (e.g., Red, Blue)"
-                      class="flex-1 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                    <button
-                      type="button"
-                      @click="addKind"
-                      class="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700"
-                    >
-                      Add Kind
-                    </button>
-                  </div>
-                  <div class="flex flex-wrap gap-2">
-                    <div
-                      v-for="(kind, index) in form.kinds"
-                      :key="index"
-                      class="flex items-center gap-1 px-3 py-1 bg-gray-100 rounded-full"
-                    >
-                      <span class="text-sm">{{ kind }}</span>
-                      <button
-                        type="button"
-                        @click="removeKind(index)"
-                        class="text-gray-500 hover:text-red-600"
+                <!-- Variants List -->
+                <div class="space-y-2 mt-4">
+                  <div v-for="(variant, index) in form.variants" :key="index" class="border rounded-md p-3">
+                    <div class="flex items-center justify-between cursor-pointer" @click="toggleVariant(index)">
+                      <div class="flex items-center gap-2">
+                        <span class="font-medium">{{ variant.size }}</span>
+                        <button
+                          type="button"
+                          @click.stop="removeSize(index)"
+                          class="text-red-600 hover:text-red-700"
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
+                          </svg>
+                        </button>
+                      </div>
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        class="h-5 w-5 transform transition-transform" 
+                        :class="{ 'rotate-180': isVariantExpanded(index) }"
+                        viewBox="0 0 20 20" 
+                        fill="currentColor"
                       >
-                        ×
-                      </button>
+                        <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                      </svg>
+                    </div>
+                    <!-- Expandable Content -->
+                    <div v-show="isVariantExpanded(index)" class="mt-3 space-y-3">
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Kind (optional)</label>
+                        <input
+                          v-model="variant.kind"
+                          type="text"
+                          placeholder="Enter kind"
+                          class="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        />
+                      </div>
+                      <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Price</label>
+                        <input
+                          v-model="variant.price"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Enter price"
+                          :class="[
+                            'w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                            { 'border-red-500': form.errors[`variants.${index}.price`] }
+                          ]"
+                        />
+                        <small v-if="form.errors[`variants.${index}.price`]" class="text-red-700">
+                          {{ form.errors[`variants.${index}.price`] }}
+                        </small>
+                      </div>
                     </div>
                   </div>
-                  <small v-show="form.errors.kinds" class="text-red-700">{{
-                    form.errors.kinds
-                  }}</small>
                 </div>
               </div>
             </div>
@@ -432,33 +408,52 @@ const form = useForm({
   slug: props.product.slug,
   sku: props.product.sku,
   description: props.product.description,
-  images: [],
-  remove_images: [],
-  price: props.product.price,
+  price: props.product.variants.length > 0 ? Number(props.product.price) : 0,
   stock: props.product.stock,
   category_id: props.product.category_id,
   brand_id: props.product.brand_id,
-  warranty: props.product.warranty,
-  specifications: props.product.specifications || [],
-  sizes: [...new Set(props.product.variants?.map(v => v.sizes) || [])],
-  kinds: [...new Set(props.product.variants?.map(v => v.kinds).filter(Boolean) || [])],
-  _method: "PUT",
+  specifications: props.product.specifications,
+  variants: props.product.variants ? props.product.variants.map(v => ({
+    size: v.sizes,  
+    kind: v.kinds,  
+    price: Number(v.price)  
+  })) : [],
+  remove_images: [],
 });
 
-// Debug log to check variants data
-console.log('Product Variants:', props.product.variants);
-console.log('Loaded Sizes:', form.sizes);
-console.log('Loaded Kinds:', form.kinds);
+const expandedVariants = ref([]);
+const hasVariants = computed(() => {
+  return form.variants && form.variants.length > 0;
+});
+
+const toggleVariant = (index) => {
+  if (expandedVariants.value.includes(index)) {
+    expandedVariants.value = expandedVariants.value.filter(i => i !== index);
+  } else {
+    expandedVariants.value.push(index);
+  }
+};
+
+const isVariantExpanded = (index) => {
+  return expandedVariants.value.includes(index);
+};
+
+// Watch for changes in variants to handle price field
+watch(() => form.variants, (newVariants) => {
+  if (newVariants && newVariants.length > 0) {
+    form.price = 0; 
+  }
+}, { deep: true });
 
 const currentSpecifications = ref([]);
-const imagePreviews = ref([]); // Initialize with existing images
+const imagePreviews = ref([]); 
 const newSize = ref('');
 const newKind = ref('');
 
 // Load existing images into previews
 if (props.product.product_images && props.product.product_images.length > 0) {
   imagePreviews.value = props.product.product_images.map((image) => {
-    return `/storage/${image}`; // Directly use the image path
+    return `/storage/${image}`; 
   });
 }
 
@@ -483,9 +478,7 @@ const handleCategoryChange = () => {
   );
   currentSpecifications.value = selectedCategory ? selectedCategory.specifications : [];
 
-  // Preserve existing specification values when changing category
   form.specifications = currentSpecifications.value.map((spec) => {
-    // Find existing specification value from product_specifications
     const existingSpec = props.product.specifications.find((s) => s.id === spec.id);
     return {
       id: spec.id,
@@ -538,20 +531,16 @@ const removeImage = (index) => {
   const imagePath = props.product.product_images[index];
 
   if (form.images[index]) {
-    // If it's a newly added image
     form.images.splice(index, 1);
   } else {
-    // If it's an existing image
     if (!form.remove_images) {
       form.remove_images = [];
     }
     form.remove_images.push(imagePath);
   }
 
-  // Remove from preview
   imagePreviews.value.splice(index, 1);
 
-  // Also remove from product_images to keep the arrays in sync
   props.product.product_images.splice(index, 1);
 };
 
@@ -562,10 +551,9 @@ const clearRelatedErrors = () => {
 };
 
 const updateForm = () => {
-  form.post(route("products.update", props.product.id), {
+  form.put(route("products.update", props.product.id), {
     preserveScroll: true,
     onSuccess: () => {
-      // Optional: Reset only specific fields after successful update
       form.reset("images");
     },
   });
@@ -573,25 +561,20 @@ const updateForm = () => {
 
 // Methods for managing sizes and kinds
 const addSize = () => {
-  if (newSize.value.trim() && !form.sizes.includes(newSize.value.trim())) {
-    form.sizes.push(newSize.value.trim());
-    newSize.value = '';
+  if (newSize.value.trim()) {
+    if (!form.variants.some(v => v.size === newSize.value.trim())) {
+      form.variants.push({
+        size: newSize.value.trim(),
+        kind: newKind.value || null,
+        price: ''
+      });
+    }
+    newSize.value = "";
   }
 };
 
 const removeSize = (index) => {
-  form.sizes.splice(index, 1);
-};
-
-const addKind = () => {
-  if (newKind.value.trim() && !form.kinds.includes(newKind.value.trim())) {
-    form.kinds.push(newKind.value.trim());
-    newKind.value = '';
-  }
-};
-
-const removeKind = (index) => {
-  form.kinds.splice(index, 1);
+  form.variants.splice(index, 1);
 };
 </script>
 
