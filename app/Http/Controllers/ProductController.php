@@ -10,7 +10,8 @@ use Illuminate\Http\Request;
 use App\Models\ProductSpecification;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ProductVariants;
-use DB;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ProductController extends Controller
 {
@@ -165,52 +166,91 @@ class ProductController extends Controller
             'slug' => 'required|string|max:255|unique:products,slug,' . $product->id,
             'sku' => 'required|string|max:255|unique:products,sku,' . $product->id,
             'description' => 'required|string',
-            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
+            'images.*' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:10240',
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
             'price' => 'required_without:variants|numeric|min:0',
-            'variants' => 'array',
-            'variants.*.size' => 'required|string',
-            'variants.*.kind' => 'nullable|string',
-            'variants.*.price' => 'required|numeric|min:0',
-            'specifications' => 'array',
-            'specifications.*.name' => 'required|string',
-            'specifications.*.value' => 'required|string',
-            'remove_images' => 'nullable|array',
+            'product_images' => 'nullable',
+            'remove_images' => 'nullable',
+            'variants' => 'nullable',
+            'specifications' => 'nullable',
         ]);
 
         try {
+            // Start DB transaction
             DB::beginTransaction();
+
+            // Parse JSON for arrays submitted as strings
+            $remove_images = $request->remove_images;
+            if (is_string($remove_images)) {
+                $remove_images = json_decode($remove_images, true);
+            }
+
+            $variants = $request->variants;
+            if (is_string($variants)) {
+                $variants = json_decode($variants, true);
+            }
+
+            $specifications = $request->specifications;
+            if (is_string($specifications)) {
+                $specifications = json_decode($specifications, true);
+            }
+
+            // We'll handle product_images parsing after image removal
 
             // Handle image uploads
             $newImages = [];
             if ($request->hasFile('images')) {
                 foreach ($request->file('images') as $image) {
-                    $imageName = time() . '_' . $image->getClientOriginalName();
-                    $image->storeAs('public/products', $imageName);
-                    $newImages[] = 'products/' . $imageName;
+                    $newImages[] = $image->store('product_images', 'public');
                 }
             }
 
-            // Handle image removals
+            // Handle image removals if there are images to remove
             $currentImages = $product->product_images ?? [];
-            if ($request->has('remove_images')) {
-                foreach ($request->remove_images as $image) {
-                    if (($key = array_search($image, $currentImages)) !== false) {
-                        Storage::delete('public/' . $image);
-                        unset($currentImages[$key]);
+            if (!empty($remove_images)) {
+                Log::info('Removing images:', $remove_images);
+
+                foreach ($remove_images as $image) {
+                    // Search for the image path in the current images array
+                    if (in_array($image, $currentImages)) {
+                        Log::info('Found image to remove: ' . $image);
+
+                        // Remove from storage
+                        if (Storage::exists('public/' . $image)) {
+                            Storage::delete('public/' . $image);
+                            Log::info('Deleted image from storage: ' . $image);
+                        }
+
+                        // Remove from the currentImages array
+                        $currentImages = array_values(array_filter($currentImages, function($img) use ($image) {
+                            return $img !== $image;
+                        }));
                     }
                 }
             }
 
-            // Merge existing and new images
-            $allImages = array_merge($currentImages, $newImages);
+            // Get the remaining images from the form
+            $product_images = $request->product_images;
+            if (is_string($product_images)) {
+                $product_images = json_decode($product_images, true) ?? [];
+            }
+
+            // If we have explicit product_images from the form, use those
+            // Otherwise fall back to the filtered currentImages
+            $remainingImages = !empty($product_images) ? $product_images : $currentImages;
+
+            // Merge remaining and new images
+            $allImages = array_merge(
+                is_array($remainingImages) ? $remainingImages : [],
+                $newImages
+            );
 
             // Set the price from the first variant if variants exist
             $price = $validated['price'] ?? 0;
-            if (!empty($validated['variants'])) {
-                $price = $validated['variants'][0]['price'];
+            if (!empty($variants)) {
+                $price = $variants[0]['price'];
             }
 
             // Update product with basic information
@@ -228,32 +268,40 @@ class ProductController extends Controller
 
             // Update variants
             $product->variants()->delete(); // Remove existing variants
-            if (!empty($validated['variants'])) {
-                foreach ($validated['variants'] as $variant) {
+            if (!empty($variants)) {
+                foreach ($variants as $variant) {
                     $product->variants()->create([
                         'sizes' => $variant['size'],
-                        'kinds' => $variant['kind'],
+                        'kinds' => $variant['kind'] ?? null,
                         'price' => $variant['price']
                     ]);
                 }
             }
 
             // Update specifications
-            $product->specifications()->delete();
-            if (!empty($validated['specifications'])) {
-                foreach ($validated['specifications'] as $spec) {
+            if (!empty($specifications)) {
+                $product->specifications()->detach();
+                foreach ($specifications as $spec) {
                     ProductSpecification::create([
                         'product_id' => $product->id,
-                        'name' => $spec['name'],
+                        'spec_id' => $spec['id'],
                         'value' => $spec['value']
                     ]);
                 }
             }
 
+            // Commit the transaction
             DB::commit();
+
             return redirect()->route('products.index')->with('success', 'Product updated successfully');
         } catch (\Exception $e) {
+            // Rollback on error
             DB::rollBack();
+
+            // Log the error for debugging
+            Log::error('Product update error: ' . $e->getMessage());
+            Log::error($e->getTraceAsString());
+
             return back()->with('error', 'Something went wrong: ' . $e->getMessage());
         }
     }
@@ -284,3 +332,4 @@ class ProductController extends Controller
         }
     }
 }
+

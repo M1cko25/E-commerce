@@ -116,7 +116,7 @@
                           class="h-32 w-auto rounded-md shadow-md"
                         />
                         <button
-                          @click="removeImage(index)"
+                          @click.stop="removeImage(index)"
                           type="button"
                           class="absolute top-1 right-1 bg-white text-red-600 w-6 h-6 rounded-full flex items-center justify-center shadow-lg"
                         >
@@ -125,12 +125,13 @@
                       </div>
                     </div>
 
-                    <div v-else class="flex text-sm text-gray-600">
+                    <!-- Upload controls - always visible -->
+                    <div class="flex text-sm text-gray-600 justify-center">
                       <label
                         for="file-upload"
                         class="relative cursor-pointer rounded-md font-medium text-blue-600 hover:text-blue-500"
                       >
-                        <span>Upload files</span>
+                        <span>{{ imagePreviews.length ? 'Add more files' : 'Upload files' }}</span>
                         <input
                           id="file-upload"
                           type="file"
@@ -319,11 +320,11 @@
                           </svg>
                         </button>
                       </div>
-                      <svg 
-                        xmlns="http://www.w3.org/2000/svg" 
-                        class="h-5 w-5 transform transition-transform" 
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        class="h-5 w-5 transform transition-transform"
                         :class="{ 'rotate-180': isVariantExpanded(index) }"
-                        viewBox="0 0 20 20" 
+                        viewBox="0 0 20 20"
                         fill="currentColor"
                       >
                         <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -389,9 +390,10 @@
 
 <script setup>
 import { ref, computed, watch } from "vue";
-import { Link, useForm } from "@inertiajs/vue3";
+import { Link, useForm, router } from "@inertiajs/vue3";
 import Sidebar from "../../../Components/Sidebar.vue";
 import Header from "../../../Components/Header.vue";
+import axios from "axios";
 
 const props = defineProps({
   product: {
@@ -414,11 +416,13 @@ const form = useForm({
   brand_id: props.product.brand_id,
   specifications: props.product.specifications,
   variants: props.product.variants ? props.product.variants.map(v => ({
-    size: v.sizes,  
-    kind: v.kinds,  
-    price: Number(v.price)  
+    size: v.sizes,
+    kind: v.kinds,
+    price: Number(v.price)
   })) : [],
   remove_images: [],
+  product_images: [...(props.product.product_images || [])],
+  images: []
 });
 
 const expandedVariants = ref([]);
@@ -441,19 +445,19 @@ const isVariantExpanded = (index) => {
 // Watch for changes in variants to handle price field
 watch(() => form.variants, (newVariants) => {
   if (newVariants && newVariants.length > 0) {
-    form.price = 0; 
+    form.price = 0;
   }
 }, { deep: true });
 
 const currentSpecifications = ref([]);
-const imagePreviews = ref([]); 
+const imagePreviews = ref([]);
 const newSize = ref('');
 const newKind = ref('');
 
 // Load existing images into previews
 if (props.product.product_images && props.product.product_images.length > 0) {
   imagePreviews.value = props.product.product_images.map((image) => {
-    return `/storage/${image}`; 
+    return `/storage/${image}`;
   });
 }
 
@@ -503,6 +507,11 @@ const handleDrop = (event) => {
 };
 
 const addFiles = (files) => {
+  // Make sure form.images is initialized
+  if (!form.images) {
+    form.images = [];
+  }
+
   files.forEach((file) => {
     if (!file.type.startsWith("image/")) {
       alert("Only image files are allowed.");
@@ -528,20 +537,41 @@ const createImagePreview = (file) => {
 };
 
 const removeImage = (index) => {
-  const imagePath = props.product.product_images[index];
-
-  if (form.images[index]) {
-    form.images.splice(index, 1);
-  } else {
-    if (!form.remove_images) {
-      form.remove_images = [];
-    }
-    form.remove_images.push(imagePath);
+  // Check if index is valid
+  if (index < 0 || index >= imagePreviews.value.length) {
+    console.error('Invalid image index:', index);
+    return;
   }
 
-  imagePreviews.value.splice(index, 1);
+  // Get the actual image path from the form's product_images array
+  if (index < form.product_images.length) {
+    // It's an existing image - get the path and add to remove_images
+    const imagePath = form.product_images[index];
 
-  props.product.product_images.splice(index, 1);
+    if (imagePath) {
+      if (!form.remove_images) {
+        form.remove_images = [];
+      }
+      form.remove_images.push(imagePath);
+
+      // Remove from form's product_images array
+      form.product_images.splice(index, 1);
+
+      // Also remove from props.product.product_images to keep in sync
+      if (index < props.product.product_images.length) {
+        props.product.product_images.splice(index, 1);
+      }
+    }
+  } else {
+    // It's a newly added image - just remove from form.images
+    const newIndex = index - form.product_images.length;
+    if (form.images && form.images[newIndex]) {
+      form.images.splice(newIndex, 1);
+    }
+  }
+
+  // Always remove from previews
+  imagePreviews.value.splice(index, 1);
 };
 
 const clearRelatedErrors = () => {
@@ -551,12 +581,70 @@ const clearRelatedErrors = () => {
 };
 
 const updateForm = () => {
-  form.put(route("products.update", props.product.id), {
-    preserveScroll: true,
-    onSuccess: () => {
-      form.reset("images");
-    },
-  });
+  // Set processing state to true
+  form.processing = true;
+
+  // If there are new images, we need to use FormData
+  if (form.images && form.images.length > 0) {
+    // Create a new FormData object
+    const formData = new FormData();
+
+    // Add regular form fields
+    formData.append('name', form.name);
+    formData.append('slug', form.slug);
+    formData.append('sku', form.sku);
+    formData.append('description', form.description);
+    formData.append('price', form.price);
+    formData.append('stock', form.stock);
+    formData.append('category_id', form.category_id);
+    formData.append('brand_id', form.brand_id);
+    formData.append('_method', 'PUT'); // Need this for method spoofing
+
+    // Add arrays as JSON strings
+    formData.append('specifications', JSON.stringify(form.specifications));
+    formData.append('variants', JSON.stringify(form.variants));
+    formData.append('product_images', JSON.stringify(form.product_images));
+    formData.append('remove_images', JSON.stringify(form.remove_images));
+
+    // Add image files
+    form.images.forEach((file, index) => {
+      formData.append(`images[${index}]`, file);
+    });
+
+    // Use Inertia's post method but make sure it knows to treat this as a PUT request
+    axios.post(route("products.update", props.product.id), formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data'
+      }
+    }).then(response => {
+      // Reset processing state
+      form.processing = false;
+      // Reset the images array after successful upload
+      form.images = [];
+      // Redirect to the products index page with success message
+      router.visit(route('products.index') + '?success=Product updated successfully');
+    }).catch(error => {
+      // Reset processing state
+      form.processing = false;
+      console.error('Form submission errors:', error);
+      // Re-populate any validation errors
+      if (error.response && error.response.data && error.response.data.errors) {
+        form.setErrors(error.response.data.errors);
+      }
+    });
+  } else {
+    // No new images, use regular form submission
+    form.put(route("products.update", props.product.id), {
+      preserveScroll: true,
+      onSuccess: () => {
+        form.images = [];
+        // If there were any removed images, refresh the page to show the updated images
+        if (form.remove_images && form.remove_images.length > 0) {
+          router.visit(route('products.edit', props.product.id));
+        }
+      },
+    });
+  }
 };
 
 // Methods for managing sizes and kinds
