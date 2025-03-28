@@ -22,7 +22,6 @@ return new class extends Migration
             $table->json('product_images')->nullable();
             $table->decimal('price', 10, 2);
             $table->integer('stock');
-            $table->string('warranty')->nullable();
             $table->timestamps();
         });
     }

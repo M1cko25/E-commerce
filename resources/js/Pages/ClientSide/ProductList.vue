@@ -203,7 +203,7 @@
                     >
                   </div>
                   <span class="primary-text font-bold text-base sm:text-lg"
-                    >₱{{ product.price }}</span
+                    >₱{{ product.default_variant.price }}</span
                   >
                 </div>
 
@@ -371,7 +371,7 @@ const addToCart = (product) => {
     {
       product_id: product.id,
       name: product.name,
-      price: product.price,
+      price: product.default_variant.price,
       quantity: 1,
       image: product.image ? "/storage/" + product.image : "/storage/default.jpg",
     },
@@ -380,7 +380,7 @@ const addToCart = (product) => {
       onSuccess: () => {
         addedProduct.value = {
           name: product.name,
-          price: product.price,
+          price: product.default_variant.price,
           quantity: 1,
           image: product.image ? "/storage/" + product.image : "/storage/default.jpg",
         };

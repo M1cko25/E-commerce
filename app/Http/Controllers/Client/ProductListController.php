@@ -16,10 +16,13 @@ class ProductListController extends Controller
     public function index(Request $request)
     {
         $query = Product::query()
-            ->select(['id', 'name', 'slug', 'price', 'stock', 'brand_id', 'category_id', 'product_images', 'description', 'warranty'])
+            ->select(['id', 'name', 'slug', 'description', 'brand_id', 'category_id', 'product_images'])
             ->with([
                 'category:id,name',
                 'brand:id,name',
+                'variants' => function($query) {
+                    $query->select('variants.id', 'variants.product_id', 'variants.price');
+                },
                 'specifications' => function($query) {
                     $query->select('specifications.id', 'specifications.name', 'product_specifications.value', 'product_specifications.product_id');
                 }
@@ -64,15 +67,13 @@ class ProductListController extends Controller
             return [
                 'id' => $product->id,
                 'name' => $product->name,
-                'price' => $product->price,
                 'slug' => $product->slug,
-                'stock' => $product->stock,
-                'brand' => $product->brand->name,
-                'category' => $product->category->name,
-                'image' => $product->product_images[0] ?? null,
-                'rating' => 4,
                 'description' => $product->description,
-                'warranty' => $product->warranty,
+                'price' => $product->variants->first()->price ?? 0,
+                'product_images' => $product->product_images,
+                'category' => $product->category->name,
+                'brand' => $product->brand->name,
+                'variants' => $product->variants,
                 'specifications' => $product->specifications->map(function($spec) {
                     return [
                         'name' => $spec->name,

@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use App\Models\ProductSpecification;
 use Illuminate\Support\Facades\Storage;
 use App\Models\ProductVariants;
+use DB;
 
 class ProductController extends Controller
 {
@@ -49,7 +50,6 @@ class ProductController extends Controller
             'stock' => 'required|integer|min:0',
             'category_id' => 'required|exists:categories,id',
             'brand_id' => 'required|exists:brands,id',
-            'warranty' => 'required|string|max:255',
             'sizes' => 'nullable|array',
             'sizes.*' => 'string',
             'kinds' => 'nullable|array',
@@ -58,6 +58,10 @@ class ProductController extends Controller
             'specifications' => 'nullable|array',
             'specifications.*.id' => 'required|integer|exists:specifications,id',
             'specifications.*.value' => 'required|string|max:255',
+            'variants' => 'array',
+            'variants.*.size' => 'required|string',
+            'variants.*.kind' => 'nullable|string',
+            'variants.*.price' => 'required|numeric|min:0',
         ]);
 
         try {
@@ -69,10 +73,18 @@ class ProductController extends Controller
                 }
             }
 
+            // Set the price from the first variant if variants exist
+            $price = 0;
+            if (!empty($validated['variants'])) {
+                $price = $validated['variants'][0]['price'];
+            } else {
+                $price = $validated['price'];
+            }
+
             // Save product
             $product = Product::create(array_merge(
-                collect($validated)->except(['sizes', 'kinds'])->toArray(),
-                ['product_images' => $images, 'sku' => '']
+                collect($validated)->except(['sizes', 'kinds', 'variants', 'specifications'])->toArray(),
+                ['product_images' => $images, 'sku' => '', 'price' => $price]
             ));
 
             // Generate SKU
@@ -80,13 +92,23 @@ class ProductController extends Controller
             $product->update(['sku' => $category->sku . '-' . $product->id]);
 
             // Create product variants
-            if (!empty($validated['sizes']) || !empty($validated['kinds'])) {
+            if (!empty($validated['variants'])) {
+                foreach ($validated['variants'] as $variant) {
+                    ProductVariants::create([
+                        'product_id' => $product->id,
+                        'sizes' => $variant['size'],
+                        'kinds' => $variant['kind'],
+                        'price' => $variant['price']
+                    ]);
+                }
+            } elseif (!empty($validated['sizes']) || !empty($validated['kinds'])) {
                 foreach ($validated['sizes'] as $size) {
                     foreach ($validated['kinds'] ?? [''] as $kind) {
                         ProductVariants::create([
                             'product_id' => $product->id,
                             'sizes' => $size,
-                            'kinds' => $kind ?: null
+                            'kinds' => $kind ?: null,
+                            'price' => $price
                         ]);
                     }
                 }
@@ -156,6 +178,10 @@ class ProductController extends Controller
             'specifications.*.id' => 'required|integer|exists:specifications,id',
             'specifications.*.value' => 'required|string|max:255',
             'remove_images' => 'nullable|array',
+            'variants' => 'array',
+            'variants.*.size' => 'required|string',
+            'variants.*.kind' => 'nullable|string',
+            'variants.*.price' => 'required|numeric|min:0',
         ]);
 
         try {
@@ -178,10 +204,18 @@ class ProductController extends Controller
             // Merge existing and new images
             $allImages = array_merge($product->product_images ?? [], $newImages);
 
+            // Set the price from the first variant if variants exist
+            $price = 0;
+            if (!empty($validated['variants'])) {
+                $price = $validated['variants'][0]['price'];
+            } else {
+                $price = $validated['price'];
+            }
+
             // Update product with basic information
             $product->update(array_merge(
-                collect($validated)->except(['sizes', 'kinds'])->toArray(),
-                ['product_images' => $allImages]
+                collect($validated)->except(['sizes', 'kinds', 'variants', 'specifications'])->toArray(),
+                ['product_images' => $allImages, 'price' => $price]
             ));
 
             // Update variants
@@ -189,13 +223,23 @@ class ProductController extends Controller
             $product->variants()->delete();
 
             // Then create new variants
-            if (!empty($validated['sizes']) || !empty($validated['kinds'])) {
+            if (!empty($validated['variants'])) {
+                foreach ($validated['variants'] as $variant) {
+                    ProductVariants::create([
+                        'product_id' => $product->id,
+                        'sizes' => $variant['size'],
+                        'kinds' => $variant['kind'],
+                        'price' => $variant['price']
+                    ]);
+                }
+            } elseif (!empty($validated['sizes']) || !empty($validated['kinds'])) {
                 foreach ($validated['sizes'] as $size) {
                     foreach ($validated['kinds'] ?? [''] as $kind) {
                         ProductVariants::create([
                             'product_id' => $product->id,
                             'sizes' => $size,
-                            'kinds' => $kind ?: null
+                            'kinds' => $kind ?: null,
+                            'price' => $price
                         ]);
                     }
                 }

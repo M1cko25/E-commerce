@@ -150,52 +150,46 @@
           <!-- Price and Add to Cart -->
           <div class="space-y-4">
             <!-- Product Price -->
-            <div class="text-3xl font-bold text-gray-900 mb-6">₱{{ product.price }}</div>
+            <div class="text-3xl font-bold text-gray-900 mb-6">₱{{ currentPrice }}</div>
 
-            <!-- Size Selection -->
-            <div v-if="product.variants && product.variants.length > 0" class="mb-4">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Size</label>
+            <!-- Size Selection (only show if has variants) -->
+            <div v-if="hasVariants && availableSizes.length > 0" class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">Size</label>
               <div class="flex flex-wrap gap-2">
                 <button
-                  v-for="size in uniqueSizes"
+                  v-for="size in availableSizes"
                   :key="size"
                   @click="selectSize(size)"
                   :class="[
-                    'px-4 py-2 rounded-md text-sm font-medium',
+                    'px-4 py-2 border rounded-md text-sm font-medium',
                     selectedSize === size
-                      ? 'bg-navy-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-navy-600 text-white border-navy-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                   ]"
                 >
                   {{ size }}
                 </button>
               </div>
-              <p v-if="showSizeError" class="mt-1 text-sm text-red-600">
-                Please select a size
-              </p>
             </div>
 
-            <!-- Kind/Variant Selection -->
-            <div v-if="product.variants && hasKinds" class="mb-6">
-              <label class="block text-sm font-medium text-gray-700 mb-2">Variant</label>
+            <!-- Kind Selection (only show if has variants with kinds) -->
+            <div v-if="hasVariants && availableKinds.length > 0" class="space-y-2">
+              <label class="block text-sm font-medium text-gray-700">Type</label>
               <div class="flex flex-wrap gap-2">
                 <button
-                  v-for="kind in uniqueKinds"
+                  v-for="kind in availableKinds"
                   :key="kind"
                   @click="selectKind(kind)"
                   :class="[
-                    'px-4 py-2 rounded-md text-sm font-medium',
+                    'px-4 py-2 border rounded-md text-sm font-medium',
                     selectedKind === kind
-                      ? 'bg-navy-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      ? 'bg-navy-600 text-white border-navy-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
                   ]"
                 >
                   {{ kind }}
                 </button>
               </div>
-              <p v-if="showKindError" class="mt-1 text-sm text-red-600">
-                Please select a variant
-              </p>
             </div>
 
             <!-- Quantity -->
@@ -563,7 +557,8 @@ import Footer from "../../Components/Footer.vue";
 import AddToCartModal from "../../Components/AddToCartModal.vue";
 const props = defineProps({
   product: Object,
-  similarProducts: Object,
+  similarProducts: Array,
+  selectedProducts: Array,
 });
 
 // Image carousel state
@@ -655,35 +650,68 @@ const toggleWishlist = (productId) => {
 const showSuccessModal = ref(false);
 const addedProduct = ref(null);
 
-// Add these new refs for size and kind selection
+// State for variants
+const selectedVariant = ref(null);
 const selectedSize = ref('');
 const selectedKind = ref('');
 const showSizeError = ref(false);
 const showKindError = ref(false);
 
-// Computed properties for unique sizes and kinds
-const uniqueSizes = computed(() => {
-  if (!props.product.variants) return [];
+// Compute current price based on variants or single price
+const currentPrice = computed(() => {
+  if (props.product.variants && props.product.variants.length > 0) {
+    if (selectedVariant.value) {
+      return selectedVariant.value.price;
+    }
+    return props.product.variants[0]?.price || 0;
+  }
+  return props.product.price || 0;
+});
+
+// Get unique sizes and kinds from variants
+const hasVariants = computed(() => {
+  return props.product.variants && props.product.variants.length > 0;
+});
+
+const availableSizes = computed(() => {
+  if (!hasVariants.value) return [];
   return [...new Set(props.product.variants.map(v => v.sizes))];
 });
 
-const uniqueKinds = computed(() => {
-  if (!props.product.variants) return [];
-  return [...new Set(props.product.variants.map(v => v.kinds).filter(Boolean))];
+const availableKinds = computed(() => {
+  if (!hasVariants.value) return [];
+  return [...new Set(props.product.variants.map(v => v.kinds).filter(k => k !== null))];
 });
 
-const hasKinds = computed(() => {
-  return uniqueKinds.value.length > 0;
+// Update selected variant when size or kind changes
+const updateSelectedVariant = () => {
+  if (!hasVariants.value) return;
+  
+  selectedVariant.value = props.product.variants.find(v => 
+    v.sizes === selectedSize.value && 
+    (v.kinds === selectedKind.value || (!v.kinds && !selectedKind.value))
+  );
+};
+
+// Initialize with first variant if available
+onMounted(() => {
+  if (hasVariants.value) {
+    const firstVariant = props.product.variants[0];
+    selectedSize.value = firstVariant.sizes;
+    selectedKind.value = firstVariant.kinds || '';
+    selectedVariant.value = firstVariant;
+  }
 });
 
-// Methods for handling size and kind selection
 const selectSize = (size) => {
   selectedSize.value = size;
+  updateSelectedVariant();
   showSizeError.value = false;
 };
 
 const selectKind = (kind) => {
   selectedKind.value = kind;
+  updateSelectedVariant();
   showKindError.value = false;
 };
 
@@ -700,7 +728,7 @@ const addToCart = () => {
       return;
     }
 
-    if (hasKinds.value && !selectedKind.value) {
+    if (availableKinds.value.length > 0 && !selectedKind.value) {
       showKindError.value = true;
       return;
     }
@@ -711,7 +739,7 @@ const addToCart = () => {
     {
       product_id: props.product.id,
       name: props.product.name,
-      price: props.product.price,
+      price: currentPrice.value,
       quantity: quantity.value,
       size: selectedSize.value,
       kind: selectedKind.value,
@@ -725,7 +753,7 @@ const addToCart = () => {
       onSuccess: () => {
         addedProduct.value = {
           name: props.product.name,
-          price: props.product.price,
+          price: currentPrice.value,
           quantity: quantity.value,
           size: selectedSize.value,
           kind: selectedKind.value,
