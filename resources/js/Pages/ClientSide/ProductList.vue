@@ -170,7 +170,7 @@
               >
                 <img
                   :src="
-                    product.image ? '/storage/' + product.image : 'storage/default.jpg'
+                    product.product_images ? '/storage/' + product.product_images : 'storage/default.jpg'
                   "
                   :alt="product.name"
                   class="w-full h-28 sm:h-32 md:h-36 lg:h-40 object-cover rounded-lg"
@@ -203,7 +203,7 @@
                     >
                   </div>
                   <span class="primary-text font-bold text-base sm:text-lg"
-                    >₱{{ product.default_variant.price }}</span
+                    >₱{{ product.price }}</span
                   >
                 </div>
 
@@ -371,7 +371,7 @@ const addToCart = (product) => {
     {
       product_id: product.id,
       name: product.name,
-      price: product.default_variant.price,
+      price: product.price,
       quantity: 1,
       image: product.image ? "/storage/" + product.image : "/storage/default.jpg",
     },
@@ -380,7 +380,7 @@ const addToCart = (product) => {
       onSuccess: () => {
         addedProduct.value = {
           name: product.name,
-          price: product.default_variant.price,
+          price: product.price,
           quantity: 1,
           image: product.image ? "/storage/" + product.image : "/storage/default.jpg",
         };

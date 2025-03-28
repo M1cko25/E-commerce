@@ -16,12 +16,14 @@ class ProductListController extends Controller
     public function index(Request $request)
     {
         $query = Product::query()
-            ->select(['id', 'name', 'slug', 'description', 'brand_id', 'category_id', 'product_images'])
+            ->select(['id', 'name', 'slug', 'description', 'brand_id', 'category_id', 'product_images', 'price'])
             ->with([
                 'category:id,name',
                 'brand:id,name',
                 'variants' => function($query) {
-                    $query->select('variants.id', 'variants.product_id', 'variants.price');
+                    $query->select('product_variants.id', 'product_variants.product_id', 'product_variants.price')
+                          ->orderBy('price', 'asc')
+                          ->limit(1);
                 },
                 'specifications' => function($query) {
                     $query->select('specifications.id', 'specifications.name', 'product_specifications.value', 'product_specifications.product_id');
@@ -69,7 +71,7 @@ class ProductListController extends Controller
                 'name' => $product->name,
                 'slug' => $product->slug,
                 'description' => $product->description,
-                'price' => $product->variants->first()->price ?? 0,
+                'price' => $product->variants->first()->price ?? $product->price,
                 'product_images' => $product->product_images,
                 'category' => $product->category->name,
                 'brand' => $product->brand->name,

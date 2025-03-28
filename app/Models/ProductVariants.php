@@ -9,6 +9,7 @@ class ProductVariants extends Model
 {
     /** @use HasFactory<\Database\Factories\ProductVariantsFactory> */
     use HasFactory;
+    protected $table = 'product_variants';
     protected $fillable = [
         'product_id',
         'sizes',
