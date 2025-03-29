@@ -12,6 +12,8 @@ use App\Models\CustomerAddresses;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+use Illuminate\Support\Facades\DB;
+use App\Models\Product;
 
 class CheckoutController extends Controller
 {
@@ -205,5 +207,94 @@ class CheckoutController extends Controller
         Session::forget('payment_data');
 
         return redirect()->route('customer.myOrders')->with('success', 'Payment successful! Your order has been placed.');
+    }
+
+    /**
+     * Process Cash on Delivery order
+     */
+    public function processCod(Request $request)
+    {
+        // Validate the request
+        $request->validate([
+            'notes' => 'nullable|string',
+            'shipping_address' => 'nullable|string',
+        ]);
+
+        // Get customer information
+        $customer = Auth::guard('customer')->user();
+        $address = CustomerAddresses::where('customer_id', $customer->id)->first();
+
+        if (!$address && $request->input('delivery_method', 'delivery') === 'delivery') {
+            return back()->withErrors(['error' => 'Please add a delivery address first.']);
+        }
+
+        // Get selected cart items
+        $selectedItems = CartItem::where('customer_id', $customer->id)
+            ->where('selected', true)
+            ->with('product')
+            ->get();
+
+        if ($selectedItems->isEmpty()) {
+            return back()->withErrors(['error' => 'No items selected for checkout.']);
+        }
+
+        // Calculate totals
+        $subtotal = $selectedItems->sum(function ($item) {
+            return $item->price * $item->quantity;
+        });
+
+        $shipping = $request->input('delivery_method') === 'pickup' ? 0 : 145;
+        $total = $subtotal + $shipping;
+
+        try {
+            DB::beginTransaction();
+
+            // Create the order
+            $order = Orders::create([
+                'reference_number' => 'ORD-' . uniqid(),
+                'customer_id' => $customer->id,
+                'total_amount' => $total,
+                'payment_method' => $request->input('payment_method', 'cod'),
+                'shipping_method' => $request->input('delivery_method', 'delivery'),
+                'shipping_amount' => $shipping,
+                'payment_status' => 'pending',
+                'notes' => $request->input('notes'),
+                'shipping_address' => $address ? "{$address->complete_address}, {$address->city}, {$address->province}, {$address->zip_code}" : null,
+                'order_status' => 'pending'
+            ]);
+
+            // Create order items and update stock
+            foreach ($selectedItems as $item) {
+                // Create order item
+                OrderItems::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item->product_id,
+                    'quantity' => $item->quantity,
+                    'unit_amount' => $item->price,
+                    'total_amount' => $item->price * $item->quantity
+                ]);
+
+                // Update product stock
+                $product = Product::find($item->product_id);
+                if ($product) {
+                    $product->stock = max(0, $product->stock - $item->quantity);
+                    $product->save();
+                }
+            }
+
+            // Clear selected cart items
+            CartItem::where('customer_id', $customer->id)
+                ->where('selected', true)
+                ->delete();
+
+            DB::commit();
+
+            // Redirect to home with success message
+            return redirect()->route('customer.myOrders')->with('success', 'Your order has been placed successfully! You can track your order status here.');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['error' => 'Failed to process your order. Please try again. ' . $e->getMessage()]);
+        }
     }
 }

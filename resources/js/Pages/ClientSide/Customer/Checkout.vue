@@ -75,7 +75,7 @@
                   value="delivery"
                   class="form-radio text-navy-600 focus:ring-navy-500"
                 />
-                <span>Lalamove Delivery</span>
+                <span>Address Delivery</span>
               </label>
 
               <label class="flex items-center space-x-3">
@@ -138,11 +138,10 @@
                   value="gcash"
                   class="form-radio text-navy-600 focus:ring-navy-500"
                 />
-                <span>PayNow (PayMongo)</span>
+                <span>Gcash</span>
               </label>
 
               <label
-                v-if="deliveryMethod === 'pickup'"
                 class="flex items-center space-x-3"
               >
                 <input
@@ -151,7 +150,7 @@
                   value="cash"
                   class="form-radio text-navy-600 focus:ring-navy-500"
                 />
-                <span>Pay at Pickup</span>
+                <span>Cash on Delivery</span>
               </label>
             </div>
           </div>
@@ -373,46 +372,162 @@
       </Dialog>
     </TransitionRoot>
     <!-- Payment Modal -->
-    <div
-      v-if="showPaymentModal"
-      class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
-    >
-      <div class="bg-white rounded-lg shadow-lg w-11/12 max-w-md p-6">
-        <h2 class="text-xl font-bold text-gray-900 mb-4">Confirm Payment</h2>
-        <p class="text-gray-700 mb-4">
-          To proceed with your order, please confirm the payment.
-        </p>
+    <div v-if="showPaymentModal" class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+        <div class="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md">
+          <div class="mb-4 flex justify-between items-center">
+            <h3 class="text-lg font-medium text-gray-900">
+              {{ paymentMethod === 'cash' ? 'Confirm Order' : 'Confirm Payment' }}
+            </h3>
+            <button
+              @click="showPaymentModal = false"
+              class="text-gray-400 hover:text-gray-500"
+            >
+              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
 
-        <div class="space-y-4">
-          <div class="flex items-center justify-between">
-            <span class="text-gray-600">Subtotal:</span>
-            <span class="font-medium">₱{{ summary.subtotal }}</span>
+          <!-- Order Summary -->
+          <div class="mb-6 border rounded-lg p-4 bg-gray-50">
+            <h4 class="font-medium text-gray-800 mb-2">Order Summary</h4>
+
+            <!-- Item list -->
+            <div class="max-h-40 overflow-y-auto mb-3">
+              <div v-for="item in items" :key="item.id" class="flex py-2 border-b last:border-b-0">
+                <div class="w-12 h-12 flex-shrink-0">
+                  <img
+                    :src="getImageUrl(item.image)"
+                    :alt="item.name"
+                    class="w-full h-full object-cover rounded"
+                  />
+                </div>
+                <div class="ml-3 flex-1">
+                  <div class="text-sm font-medium text-gray-900 truncate">{{ item.name }}</div>
+                  <div class="text-xs text-gray-500">
+                    Qty: {{ item.quantity }} × ₱{{ item.price }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Price breakdown -->
+            <div class="space-y-1 text-sm">
+              <div class="flex justify-between">
+                <span class="text-gray-600">Subtotal:</span>
+                <span class="font-medium">₱{{ summary.subtotal }}</span>
+              </div>
+              <div class="flex justify-between">
+                <span class="text-gray-600">Delivery Fee:</span>
+                <span class="font-medium">₱{{ summary.shipping }}</span>
+              </div>
+              <div class="flex justify-between pt-2 border-t text-base font-semibold">
+                <span>Total Amount:</span>
+                <span class="text-navy-600">₱{{ summary.total }}</span>
+              </div>
+            </div>
           </div>
-          <div class="flex items-center justify-between">
-            <span class="text-gray-600">Delivery Fee:</span>
-            <span class="font-medium">₱{{ summary.shipping }}</span>
+
+          <!-- Delivery Address for COD -->
+          <div v-if="paymentMethod === 'cash'" class="mb-6 border rounded-lg p-4">
+            <h4 class="font-medium text-gray-800 mb-2">Delivery Address</h4>
+            <p class="text-sm text-gray-600">
+              {{ customer.first_name }} {{ customer.last_name }}<br>
+              {{ customer.address?.complete_address }}<br>
+              {{ customer.address?.city }}, {{ customer.address?.province }}, {{ customer.address?.zip_code }}
+            </p>
           </div>
-          <div class="flex items-center justify-between text-lg font-semibold">
-            <span>Total Amount:</span>
-            <span class="text-navy-600">₱{{ summary.total }}</span>
+
+          <!-- COD Notice -->
+          <div v-if="paymentMethod === 'cash'" class="mb-6 bg-blue-50 p-4 rounded-lg">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-blue-700">
+                  Payment will be collected upon delivery. Please have the exact amount ready.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- GCash Notice -->
+          <div v-if="paymentMethod === 'gcash'" class="mb-6 bg-blue-50 p-4 rounded-lg">
+            <div class="flex">
+              <div class="flex-shrink-0">
+                <svg class="h-5 w-5 text-blue-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd" />
+                </svg>
+              </div>
+              <div class="ml-3">
+                <p class="text-sm text-blue-700">
+                  You will be redirected to GCash to complete your payment.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action buttons -->
+          <div class="flex justify-end space-x-3">
+            <button
+              @click="showPaymentModal = false"
+              class="px-4 py-2 bg-gray-200 rounded-lg text-gray-600 hover:bg-gray-300"
+            >
+              Cancel
+            </button>
+            <button
+              @click="proceedToPayment"
+              :disabled="isLoading"
+              class="flex items-center justify-center w-2/3 bg-navy-600 text-white py-3 rounded-lg font-medium hover:bg-navy-700 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <svg v-if="isLoading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span v-if="isLoading">Processing...</span>
+              <span v-else>{{ paymentMethod === 'cash' ? 'Place Order' : 'Proceed to Payment' }}</span>
+            </button>
           </div>
         </div>
+      </div>
+    </div>
 
-        <div class="mt-6 flex justify-end space-x-3">
-          <button
-            @click="showPaymentModal = false"
-            class="px-4 py-2 bg-gray-200 rounded-lg text-gray-600 hover:bg-gray-300"
-          >
-            Cancel
-          </button>
-          <button
-            @click="proceedToPayment"
-            :disabled="isLoading"
-            class="w-full bg-navy-600 text-white py-3 rounded-lg font-medium hover:bg-navy-700 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span v-if="isLoading">Processing...</span>
-            <span v-else>Proceed to Payment</span>
-          </button>
+    <!-- Success Modal -->
+    <div v-if="showSuccessModal" class="fixed inset-0 z-50 overflow-y-auto">
+      <div class="flex items-center justify-center min-h-screen px-4">
+        <div class="fixed inset-0 bg-black bg-opacity-50"></div>
+        <div class="relative bg-white rounded-lg shadow-xl p-6 w-full max-w-md text-center">
+          <div class="mb-4">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100">
+              <svg class="h-6 w-6 text-green-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 class="mt-3 text-lg font-medium text-gray-900">Order Placed Successfully!</h3>
+            <p class="mt-2 text-sm text-gray-500">
+              Your order has been placed successfully. You will receive a confirmation soon.
+            </p>
+          </div>
+
+          <div class="mt-6 flex justify-center space-x-3">
+            <Link
+              :href="route('product.list')"
+              class="px-4 py-2 bg-gray-200 rounded-lg text-gray-600 hover:bg-gray-300"
+            >
+              Continue Shopping
+            </Link>
+            <Link
+              :href="route('customer.myOrders')"
+              class="px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-navy-700"
+            >
+              View My Orders
+            </Link>
+          </div>
         </div>
       </div>
     </div>
@@ -473,11 +588,11 @@ const notes = ref("");
 const agreeToTerms = ref(false);
 const showPaymentModal = ref(false);
 const isLoading = ref(false);
-// Cart items
+const showSuccessModal = ref(false);
 
 // Computed values
 const subtotal = computed(() => {
-  return cartItems.value.reduce((total, item) => total + item.price * item.quantity, 0);
+  return props.items.reduce((total, item) => total + item.price * item.quantity, 0);
 });
 
 const deliveryFee = computed(() => {
@@ -518,10 +633,33 @@ const proceedToPayment = () => {
       onSuccess: () => {
         isLoading.value = false;
         showPaymentModal.value = false;
+        showSuccessModal.value = true;
       },
       onError: () => {
         isLoading.value = false;
         alert('Failed to initialize payment. Please try again.');
+      }
+    });
+  } else {
+    isLoading.value = true;
+    const shippingAddress = props.customer.address ?
+      `${props.customer.address.complete_address}, ${props.customer.address.city}, ${props.customer.address.province}, ${props.customer.address.zip_code}` : '';
+
+    // Process Cash on Delivery order
+    router.post(route('customer.processCod'), {
+      notes: notes.value,
+      shipping_address: shippingAddress,
+      delivery_method: deliveryMethod.value,
+      payment_method: paymentMethod.value
+    }, {
+      onSuccess: () => {
+        isLoading.value = false;
+        showPaymentModal.value = false;
+        showSuccessModal.value = true;
+      },
+      onError: (errors) => {
+        isLoading.value = false;
+        alert('Failed to process your order: ' + Object.values(errors).flat().join('\n'));
       }
     });
   }

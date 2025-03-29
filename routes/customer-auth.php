@@ -53,10 +53,12 @@ Route::middleware(['auth:customer'])->group(function () {
             ->name('customer.myOrders');
         Route::get('payment', [CheckoutController::class, 'pay'])
             ->name('customer.payment');
+        Route::post('process-cod', [CheckoutController::class, 'processCod'])
+            ->name('customer.processCod');
 
         Route::get('/customer/orders/{reference_number}', [OrderDetailsController::class, 'show'])
             ->name('customer.orderDetails');
-            
+
         Route::get('invoice/download/{reference_number}', [OrderDetailsController::class, 'downloadInvoice'])
             ->name('invoice.download');
 
