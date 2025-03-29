@@ -29,7 +29,7 @@ class CategoryProductsController extends Controller
             ->select([
                 'id', 'name', 'slug', 'price', 'stock',
                 'brand_id', 'category_id', 'product_images',
-                'description', 'warranty'
+                'description'
             ])
             ->with([
                 'category:id,name,slug',
