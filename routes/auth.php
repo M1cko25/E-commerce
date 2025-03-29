@@ -34,13 +34,13 @@ Route::middleware('auth')->group(function () {
 
     Route::get('admin/transactions', [OrderController::class, 'index'])
         ->name('transactions');
-    // Route::inertia('admin/orders', 'AdminSide/Orders/OrderHistory');
-
+    // Route::put('admin/transactions/{order}/status', [OrderController::class, 'updateStatus'])
+    //     ->name('transactions.update-status');
     Route::get('admin/orders', [OrderController::class, 'show'])
         ->name('orders.show');
 
     Route::get('/admin/customers/{id}/orders', [CustomerController::class, 'showOrders'])->name('customers.orders');
-    Route::put('/orders/{order}/status', [CustomerController::class, 'updateOrderStatus'])
+    Route::put('/orders/{order}/approve', [CustomerController::class, 'updateOrderStatus'])
     ->name('orders.update-status');
 
     // Promotions Routes

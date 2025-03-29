@@ -137,4 +137,12 @@ class OrderController extends Controller
 
         return back()->with('success', 'Order has been declined');
     }
+
+    public function updateStatus(Request $request, $id){
+        $order = Orders::findOrFail($id);
+        $order->order_status = $request->status;
+        $order->save();
+
+        return back()->with('success', 'Order status updated successfully');
+    }
 }

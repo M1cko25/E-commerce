@@ -49,8 +49,6 @@ class PaymentController extends Controller
             ->asJson()
             ->post();
 
-
-
         Session::put('session_id', $response->data->id);
 
         return redirect($response->data->attributes->checkout_url);

@@ -295,19 +295,22 @@ const closeActionMenu = () => {
 
 const confirmAccept = () => {
   if (!orderToAccept.value) return;
-
-  router.post(`/orders/${orderToAccept.value.id}/approve`, {}, {
+  console.log(orderToAccept.value);
+  router.put(`/orders/${orderToAccept.value.id}/approve`, { 'status': "processing" }, {
     preserveScroll: true,
     onSuccess: () => {
       showAcceptModal.value = false;
       orderToAccept.value = null;
       activeActionMenu.value = null;
+      console.log('success');
       if (toast.value) {
         toast.value.addToast('Order approved successfully', 'success');
       }
+      
     },
     onError: (errors) => {
       showAcceptModal.value = false;
+      console.log(errors);
       if (errors.error && toast.value) {
         toast.value.addToast(errors.error, 'error');
       }
