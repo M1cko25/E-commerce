@@ -149,7 +149,7 @@ class AiController extends Controller
             if ($categories->count() > 0) {
                 $info = "We offer products in these categories:\n\n";
                 foreach ($categories as $category) {
-                    $categoryLink = "http://127.0.0.1:8000/category-products/{$category->slug}";
+                    $categoryLink = "https://drm-hardware.laravel.cloud/category-products/{$category->slug}";
                     $info .= "- **{$category->name}**: [Browse all {$category->name}]({$categoryLink})\n";
                 }
 
@@ -267,7 +267,7 @@ class AiController extends Controller
             if ($products->count() > 0) {
                 $info = "Here are some products that match your query (found in our database):\n\n";
                 foreach ($products as $product) {
-                    $productLink = "http://127.0.0.1:8000/product-list/{$product->slug}";
+                    $productLink = "https://drm-hardware.laravel.cloud/product-list/{$product->slug}";
 
                     $info .= "**{$product->name}** - ₱{$product->price}\n";
                     $info .= "Category: {$product->category->name} | Brand: {$product->brand->name}\n";
@@ -306,7 +306,7 @@ class AiController extends Controller
                     $info = "I couldn't find specific products matching your query, but here are some popular items from our inventory:\n\n";
 
                     foreach ($products as $product) {
-                        $productLink = "http://127.0.0.1:8000/product-list/{$product->slug}";
+                        $productLink = "https://drm-hardware.laravel.cloud/product-list/{$product->slug}";
 
                         $info .= "**{$product->name}** - ₱{$product->price}\n";
                         $info .= "Category: {$product->category->name} | Brand: {$product->brand->name}\n";
