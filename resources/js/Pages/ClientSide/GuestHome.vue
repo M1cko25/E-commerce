@@ -44,7 +44,10 @@ const visibleCategoryCards = ref(5);
 
 // Update visible cards based on screen size
 const updateVisibleCards = () => {
-  if (window.innerWidth < 840) {
+  if (window.innerWidth < 640) {
+    visibleCards.value = 1;
+    visibleCategoryCards.value = 1;
+  } else if (window.innerWidth < 768) {
     visibleCards.value = 2;
     visibleCategoryCards.value = 2;
   } else if (window.innerWidth < 1024) {
@@ -416,17 +419,24 @@ const deleteHistoryConversation = async (event, promptId) => {
     </section>
 
     <!-- Latest Products Section -->
-    <section class="py-12 bg-gray-50">
+    <section class="py-8 sm:py-12 bg-gray-50">
       <div class="container mx-auto px-4">
         <!-- Section Header -->
-        <div class="flex justify-between items-center mb-8">
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8">
           <div>
             <div class="flex items-center space-x-2 mb-2">
               <div class="w-4 h-8 bg-navy-600 rounded"></div>
               <span class="text-sm font-medium">This Month</span>
             </div>
-            <h2 class="text-2xl font-bold">Latest Products</h2>
+            <h2 class="text-xl sm:text-2xl font-bold">Latest Products</h2>
           </div>
+
+          <Link
+            :href="route('product.list')"
+            class="mt-4 sm:mt-0 px-3 py-1.5 sm:px-4 sm:py-2 text-sm bg-navy-900 text-white rounded-lg hover:bg-navy-800"
+          >
+            View All Products
+          </Link>
         </div>
 
         <div class="relative overflow-hidden">
@@ -442,6 +452,7 @@ const deleteHistoryConversation = async (event, promptId) => {
               :href="route('product.view', { slug: latestProduct.slug })"
               class="flex-none px-1"
               :class="{
+                'w-full': visibleCards === 1,
                 'w-1/2': visibleCards === 2,
                 'w-1/3': visibleCards === 3,
                 'w-1/4': visibleCards === 4,
@@ -449,7 +460,7 @@ const deleteHistoryConversation = async (event, promptId) => {
               }"
             >
               <div
-                class="bg-white rounded-lg p-2 sm:p-3 hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-blue-500"
+                class="bg-white rounded-lg p-2 sm:p-3 hover:shadow-lg transition-all duration-300 border border-gray-200 hover:border-blue-500 h-full flex flex-col"
               >
                 <!-- Brand Name -->
                 <span
@@ -460,7 +471,7 @@ const deleteHistoryConversation = async (event, promptId) => {
 
                 <!-- Product Image -->
                 <div
-                  class="flex justify-center items-center mb-2 sm:mb-3 aspect-w-1 aspect-h-1"
+                  class="flex justify-center items-center mb-2 sm:mb-3 aspect-square"
                 >
                   <img
                     :src="
@@ -469,7 +480,7 @@ const deleteHistoryConversation = async (event, promptId) => {
                         : 'storage/default.jpg'
                     "
                     :alt="latestProduct.name"
-                    class="w-full h-28 sm:h-32 md:h-36 lg:h-40 object-cover rounded-lg"
+                    class="w-full h-24 xs:h-28 sm:h-32 md:h-36 lg:h-40 object-contain rounded-lg"
                   />
                 </div>
 
@@ -480,7 +491,7 @@ const deleteHistoryConversation = async (event, promptId) => {
                   {{ latestProduct.name }}
                 </h3>
 
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between mt-auto">
                   <!-- Product Details -->
                   <div>
                     <div class="flex items-center mb-1">
@@ -503,11 +514,11 @@ const deleteHistoryConversation = async (event, promptId) => {
                       :initial-wishlist-state="latestProduct.in_wishlist"
                       size="small"
                       icon-class="h-4 w-4 sm:h-5 sm:w-5"
-                      button-class="p-1.5 sm:p-1.5 primary-text main rounded-lg"
+                      button-class="p-1 sm:p-1.5 primary-text main rounded-lg"
                     />
                     <button
                       @click.prevent="addToCart(latestProduct)"
-                      class="p-1.5 sm:p-1.5 text-white bg-navy-900 rounded-lg"
+                      class="p-1 sm:p-1.5 text-white bg-navy-900 rounded-lg"
                     >
                       <ShoppingCartIcon class="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
@@ -515,7 +526,7 @@ const deleteHistoryConversation = async (event, promptId) => {
                       :product-id="latestProduct.id"
                       size="sm"
                       :product-price="latestProduct.price"
-                      button-class="p-1.5 sm:p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                      button-class="p-1 sm:p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                       icon-class="h-4 w-4 sm:h-5 sm:w-5"
                       :show-icon="true"
                       label=""
@@ -529,24 +540,50 @@ const deleteHistoryConversation = async (event, promptId) => {
           <!-- Navigation Buttons -->
           <button
             @click="prevSlide"
-            class="absolute left-0 top-1/2 -translate-y-1/2 bg-navy-800 p-2 rounded-full hover:bg-navy-700 transition sm:p-1 lg:p-2"
+            class="absolute left-0 top-1/2 -translate-y-1/2 bg-navy-800 p-1 sm:p-2 rounded-full hover:bg-navy-700 transition shadow-md"
+            :disabled="currentSlide === 0"
+            :class="{ 'opacity-50 cursor-not-allowed': currentSlide === 0 }"
           >
-            <ChevronLeft class="h-6 w-6 text-white" />
+            <ChevronLeft class="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </button>
           <button
             @click="nextSlide"
-            class="absolute right-0 top-1/2 -translate-y-1/2 bg-navy-800 p-2 rounded-full hover:bg-navy-700 transition sm:p-1 lg:p-2"
+            class="absolute right-0 top-1/2 -translate-y-1/2 bg-navy-800 p-1 sm:p-2 rounded-full hover:bg-navy-700 transition shadow-md"
+            :disabled="currentSlide >= props.latestProducts.length - visibleCards"
+            :class="{ 'opacity-50 cursor-not-allowed': currentSlide >= props.latestProducts.length - visibleCards }"
           >
-            <ChevronRight class="h-6 w-6 text-white" />
+            <ChevronRight class="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </button>
+
+          <!-- Pagination Indicators -->
+          <div class="flex justify-center mt-6 space-x-2">
+            <button
+              v-for="(_, index) in Array.from({ length: Math.ceil(props.latestProducts.length / visibleCards) })"
+              :key="index"
+              @click="currentSlide = index"
+              class="w-2.5 h-2.5 rounded-full transition-colors"
+              :class="currentSlide === index ? 'bg-navy-600' : 'bg-gray-300 hover:bg-gray-400'"
+              :aria-label="`Go to slide ${index + 1}`"
+            ></button>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Categories Section -->
-    <section class="py-12 bg-navy-900 text-white">
+    <section class="py-8 sm:py-12 bg-navy-900 text-white">
       <div class="container mx-auto px-4">
-        <h2 class="text-2xl font-bold mb-8">Categories</h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8">
+          <h2 class="text-xl sm:text-2xl font-bold">Categories</h2>
+
+          <Link
+            :href="route('product.list')"
+            class="mt-4 sm:mt-0 px-3 py-1.5 sm:px-4 sm:py-2 text-sm bg-navy-600 text-white rounded-lg hover:bg-navy-700"
+          >
+            All Categories
+          </Link>
+        </div>
+
         <div class="relative overflow-hidden">
           <!-- Carousel Wrapper -->
           <div
@@ -564,21 +601,24 @@ const deleteHistoryConversation = async (event, promptId) => {
               :key="category.id"
               class="flex-none px-1"
               :class="{
+                'w-full': visibleCategoryCards === 1,
                 'w-1/2': visibleCategoryCards === 2,
                 'w-1/3': visibleCategoryCards === 3,
                 'w-1/4': visibleCategoryCards === 4,
                 'w-1/5': visibleCategoryCards === 5,
               }"
             >
-              <div class="bg-navy-800 rounded-lg overflow-hidden">
-                <img
-                  :src="
-                    category.image ? '/storage/' + category.image : 'storage/default.jpg'
-                  "
-                  :alt="category.name"
-                  class="w-full h-48 object-contain"
-                />
-                <div class="p-4">
+              <div class="bg-navy-800 rounded-lg overflow-hidden h-full shadow-md hover:shadow-lg transition-all hover:bg-navy-700">
+                <div class="relative aspect-video">
+                  <img
+                    :src="
+                      category.image ? '/storage/' + category.image : 'storage/default.jpg'
+                    "
+                    :alt="category.name"
+                    class="w-full h-full object-contain p-2"
+                  />
+                </div>
+                <div class="p-3 sm:p-4">
                   <h3 class="font-medium truncate whitespace-nowrap overflow-hidden">
                     {{ category.name }}
                   </h3>
@@ -590,33 +630,49 @@ const deleteHistoryConversation = async (event, promptId) => {
           <!-- Navigation Buttons -->
           <button
             @click="prevCategorySlide"
-            class="absolute left-0 top-1/2 -translate-y-1/2 bg-navy-800 p-2 rounded-full hover:bg-navy-700 transition sm:p-1 lg:p-2"
+            class="absolute left-0 top-1/2 -translate-y-1/2 bg-navy-700 p-1 sm:p-2 rounded-full hover:bg-navy-600 transition shadow-md"
+            :disabled="currentCategorySlide === 0"
+            :class="{ 'opacity-50 cursor-not-allowed': currentCategorySlide === 0 }"
           >
-            <ChevronLeft class="h-6 w-6 text-white" />
+            <ChevronLeft class="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </button>
           <button
             @click="nextCategorySlide"
-            class="absolute right-0 top-1/2 -translate-y-1/2 bg-navy-800 p-2 rounded-full hover:bg-navy-700 transition sm:p-1 lg:p-2"
+            class="absolute right-0 top-1/2 -translate-y-1/2 bg-navy-700 p-1 sm:p-2 rounded-full hover:bg-navy-600 transition shadow-md"
+            :disabled="currentCategorySlide >= props.categories.length - visibleCategoryCards"
+            :class="{ 'opacity-50 cursor-not-allowed': currentCategorySlide >= props.categories.length - visibleCategoryCards }"
           >
-            <ChevronRight class="h-6 w-6 text-white" />
+            <ChevronRight class="h-5 w-5 sm:h-6 sm:w-6 text-white" />
           </button>
+
+          <!-- Pagination Indicators -->
+          <div class="flex justify-center mt-6 space-x-2">
+            <button
+              v-for="(_, index) in Array.from({ length: Math.ceil(props.categories.length / visibleCategoryCards) })"
+              :key="index"
+              @click="currentCategorySlide = index"
+              class="w-2.5 h-2.5 rounded-full transition-colors"
+              :class="currentCategorySlide === index ? 'bg-white' : 'bg-navy-700 hover:bg-navy-600'"
+              :aria-label="`Go to category slide ${index + 1}`"
+            ></button>
+          </div>
         </div>
       </div>
     </section>
 
     <!-- Explore Products Section -->
-    <section class="py-12 bg-gray-50">
+    <section class="py-8 sm:py-12 bg-gray-50">
       <div class="container mx-auto px-4">
         <!-- Section Header -->
         <div class="flex items-center space-x-2 mb-2">
           <div class="w-4 h-8 bg-navy-600 rounded"></div>
           <span class="text-sm font-medium">Our Products</span>
         </div>
-        <div class="flex justify-between items-center mb-8">
-          <h2 class="text-2xl font-bold">Explore Our Products</h2>
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 sm:mb-8">
+          <h2 class="text-xl sm:text-2xl font-bold">Explore Our Products</h2>
           <Link
             :href="route('product.list')"
-            class="px-4 py-2 bg-navy-900 text-white rounded-lg hover:bg-navy-800"
+            class="mt-4 sm:mt-0 px-3 py-1.5 sm:px-4 sm:py-2 text-sm bg-navy-900 text-white rounded-lg hover:bg-navy-800"
           >
             Browse All Products
           </Link>
@@ -624,13 +680,13 @@ const deleteHistoryConversation = async (event, promptId) => {
 
         <!-- Responsive Products Grid -->
         <div
-          class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 sm:gap-2"
+          class="grid grid-cols-1 xs:grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4 sm:gap-6"
         >
           <Link
             :href="route('product.view', { slug: product.slug })"
             v-for="product in exploreProducts"
             :key="product.id"
-            class=" relative bg-white rounded-lg p-2 sm:p-3 hover:shadow-lg transition-all duration-300 border border-gray-200 block hover:border-blue-500"
+            class="relative bg-white rounded-lg p-2 sm:p-3 hover:shadow-lg transition-all duration-300 border border-gray-200 block hover:border-blue-500 h-full flex flex-col"
           >
             <!-- Brand Name -->
             <span
@@ -641,12 +697,12 @@ const deleteHistoryConversation = async (event, promptId) => {
 
             <!-- Product Image -->
             <div
-              class="flex justify-center items-center mb-2 sm:mb-3 aspect-w-1 aspect-h-1"
+              class="flex justify-center items-center mb-2 sm:mb-3 aspect-square"
             >
               <img
                 :src="product.image ? '/storage/' + product.image : 'storage/default.jpg'"
                 :alt="product.name"
-                class="w-full h-28 sm:h-32 md:h-36 lg:h-40 object-cover rounded-lg"
+                class="w-full h-24 xs:h-28 sm:h-32 md:h-36 lg:h-40 object-contain rounded-lg"
               />
             </div>
 
@@ -657,7 +713,7 @@ const deleteHistoryConversation = async (event, promptId) => {
               {{ product.name }}
             </h3>
 
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between mt-auto">
               <!-- Product Details -->
               <div>
                 <div class="flex items-center mb-1">
@@ -680,11 +736,11 @@ const deleteHistoryConversation = async (event, promptId) => {
                   :initial-wishlist-state="product.in_wishlist"
                   size="small"
                   icon-class="h-4 w-4 sm:h-5 sm:w-5"
-                  button-class="p-1.5 sm:p-1.5 primary-text main rounded-lg"
+                  button-class="p-1 sm:p-1.5 primary-text main rounded-lg"
                 />
                 <button
                   @click.prevent="addToCart(product)"
-                  class="p-1.5 sm:p-1.5 button-primary rounded-lg"
+                  class="p-1 sm:p-1.5 button-primary rounded-lg"
                 >
                   <ShoppingCartIcon class="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
@@ -692,7 +748,7 @@ const deleteHistoryConversation = async (event, promptId) => {
                   :product-id="product.id"
                   size="sm"
                   :product-price="product.price"
-                  button-class="p-1.5 sm:p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                  button-class="p-1 sm:p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                   icon-class="h-4 w-4 sm:h-5 sm:w-5"
                   :show-icon="true"
                   label=""
