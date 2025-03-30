@@ -55,10 +55,10 @@
 </head>
 <body>
     <div class="header">
-        <h1>ArtzworkPC</h1>
-        <p>Phase 4 Package 4 Bagong Silang Caloocan City</p>
-        <p>Phone: 09175507848 / 09975937774</p>
-        <p>Email: artwork00@gmail.com</p>
+        <h1>DRM - David Rusira Mota</h1>
+        <p>Address: 1596B Quirino Highway,Sapang Alat, Pangarap Village, Caloocan City</p>
+        <p>Phone: 09064144835</p>
+        <p>Email: drm.roofs@gmail.com</p>
     </div>
 
     <div class="invoice-info">
