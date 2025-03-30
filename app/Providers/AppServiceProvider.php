@@ -5,6 +5,8 @@ namespace App\Providers;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Hash;
 
 use Illuminate\Auth\Middleware\Authenticate;
 use Illuminate\Auth\Middleware\RedirectIfAuthenticated;
@@ -46,5 +48,17 @@ class AppServiceProvider extends ServiceProvider
             return route('customer.login'); // Customer routes redirect to customer login
         });
 
+        // Add support for current_password validation with custom guard
+        Validator::extend('current_password', function ($attribute, $value, $parameters, $validator) {
+            $guard = $parameters[0] ?? null;
+            $user = $guard ? Auth::guard($guard)->user() : Auth::user();
+
+            return Hash::check($value, $user->password);
+        });
+
+        // Add custom error message for current_password validation
+        Validator::replacer('current_password', function ($message, $attribute, $rule, $parameters) {
+            return 'The current password is incorrect.';
+        });
     }
 }

@@ -46,6 +46,12 @@ Route::middleware(['auth:customer'])->group(function () {
         Route::get('/customer/profile', [ClientProfileController::class, 'index'])
             ->name('customer.profile');
 
+        // Add security routes
+        Route::get('/customer/security', [ClientProfileController::class, 'security'])
+            ->name('customer.security');
+        Route::post('/customer/security/update-password', [ClientProfileController::class, 'updatePassword'])
+            ->name('customer.security.update');
+
         // Customer Address Routes
         Route::get('/customer/addresses', [CustomerAddressController::class, 'index'])
             ->name('customer.addresses');
