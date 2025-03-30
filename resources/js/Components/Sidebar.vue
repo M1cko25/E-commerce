@@ -33,7 +33,7 @@ const menuItems = computed(() =>
     { name: "Home Content", icon: FilePenLine, href: route("home-content.index") },
     { name: "Customers", icon: UsersIcon, href: route("customers") },
     { name: "Employees", icon: UsersIcon, href: route("employees.index") },
-    { name: "Returns", icon: ListX, href: route('dashboard') },
+    { name: "Returns", icon: ListX, href: route('returns.index') },
   ].map((item) => ({
     ...item,
     current: currentPath.value.startsWith(item.href),

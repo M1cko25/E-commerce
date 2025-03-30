@@ -14,8 +14,17 @@
             placeholder="Search"
             class="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
             v-model="searchQuery"
+            @input="handleSearch"
+            @keyup.enter="handleSearchEnter"
           />
           <SearchIcon class="absolute left-3 top-2.5 h-5 w-5 text-gray-400" />
+          <button
+            v-if="searchQuery"
+            @click="clearSearch"
+            class="absolute right-3 top-2.5 h-5 w-5 text-gray-400 hover:text-gray-600"
+          >
+            <XIcon class="h-4 w-4" />
+          </button>
         </div>
 
         <!-- Additional Actions Slot -->
@@ -57,9 +66,9 @@
 </template>
 
 <script setup>
-import { computed, ref } from "vue";
-import { SearchIcon } from "lucide-vue-next";
-import { usePage } from "@inertiajs/vue3";
+import { computed, ref, watch } from "vue";
+import { SearchIcon, XIcon } from "lucide-vue-next";
+import { usePage, Link } from "@inertiajs/vue3";
 
 // Fetch page props using Inertia.js
 const page = usePage();
@@ -70,7 +79,7 @@ const user = computed(() => {
 });
 
 // Props for dynamic content
-defineProps({
+const props = defineProps({
   title: {
     type: String,
     required: true,
@@ -80,14 +89,49 @@ defineProps({
     type: Boolean,
     default: true,
   },
+  initialSearchQuery: {
+    type: String,
+    default: "",
+  }
 });
 
+// Emit events that parent components can listen to
+const emit = defineEmits(['search', 'search-enter', 'search-clear']);
+
 // State for search query and profile menu
-const searchQuery = ref("");
+const searchQuery = ref(props.initialSearchQuery || "");
 const isProfileOpen = ref(false);
+
+// Watch for changes to initialSearchQuery prop
+watch(() => props.initialSearchQuery, (newValue) => {
+  searchQuery.value = newValue;
+});
 
 // Methods
 const toggleProfile = () => {
   isProfileOpen.value = !isProfileOpen.value;
 };
+
+const handleSearch = () => {
+  emit('search', searchQuery.value);
+};
+
+const handleSearchEnter = () => {
+  emit('search-enter', searchQuery.value);
+};
+
+const clearSearch = () => {
+  searchQuery.value = '';
+  emit('search-clear');
+};
+
+// Expose search query to parent components
+defineExpose({
+  searchQuery,
+  clearSearch
+});
 </script>
+
+<style scoped>
+/* Additional scoped styles can be added here */
+</style>

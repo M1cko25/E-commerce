@@ -150,7 +150,15 @@
           <!-- Price and Add to Cart -->
           <div class="space-y-4">
             <!-- Product Price -->
-            <div class="text-3xl font-bold text-gray-900 mb-6">₱{{ currentPrice }}</div>
+            <div class="flex justify-between items-center mb-6">
+              <div class="text-3xl font-bold text-gray-900">₱{{ currentPrice }}</div>
+              <WishlistButton
+                :product-id="product.id"
+                :initial-wishlist-state="product.in_wishlist"
+                size="large"
+                icon-class="w-6 h-6"
+              />
+            </div>
 
             <!-- Size Selection (only show if has variants) -->
             <div v-if="hasVariants && availableSizes.length > 0" class="space-y-2">
@@ -555,6 +563,7 @@ import {
 import NavLink from "../../Components/NavLink.vue";
 import Footer from "../../Components/Footer.vue";
 import AddToCartModal from "../../Components/AddToCartModal.vue";
+import WishlistButton from "../../Components/WishlistButton.vue";
 const props = defineProps({
   product: Object,
   similarProducts: Array,
@@ -686,9 +695,9 @@ const availableKinds = computed(() => {
 // Update selected variant when size or kind changes
 const updateSelectedVariant = () => {
   if (!hasVariants.value) return;
-  
-  selectedVariant.value = props.product.variants.find(v => 
-    v.sizes === selectedSize.value && 
+
+  selectedVariant.value = props.product.variants.find(v =>
+    v.sizes === selectedSize.value &&
     (v.kinds === selectedKind.value || (!v.kinds && !selectedKind.value))
   );
 };

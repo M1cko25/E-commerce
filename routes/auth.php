@@ -15,6 +15,7 @@ use App\Http\Middleware\EnsureCustomerIsAuthenticated;
 use App\Http\Controllers\Client\ClientProfileController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\HomeContentController;
+use App\Http\Controllers\ReturnController;
 
 Route::middleware('auth')->group(function () {
     Route::get('admin/dashboard', [DashboardController::class, 'index'])
@@ -43,6 +44,9 @@ Route::middleware('auth')->group(function () {
     Route::put('/orders/{order}/approve', [CustomerController::class, 'updateOrderStatus'])
     ->name('orders.update-status');
 
+    Route::post('/orders/{order}/decline', [OrderController::class, 'decline'])
+    ->name('orders.decline');
+
     // Promotions Routes
     Route::resource('admin/promotions', PromotionController::class)
         ->names('promotions');
@@ -50,6 +54,21 @@ Route::middleware('auth')->group(function () {
     // Home Content Routes
     Route::resource('admin/home-content', HomeContentController::class)
         ->names('home-content');
+
+    // Return Management Routes
+    Route::get('admin/returns', [ReturnController::class, 'index'])
+        ->name('returns.index');
+    Route::put('admin/returns/{id}/approve-return', [ReturnController::class, 'approveReturn'])
+        ->name('returns.approve-return');
+    Route::put('admin/returns/{id}/approve-refund', [ReturnController::class, 'approveRefund'])
+        ->name('returns.approve-refund');
+    Route::put('admin/returns/{id}/reject', [ReturnController::class, 'rejectRequest'])
+        ->name('returns.reject');
+    Route::delete('admin/returns/{id}', [ReturnController::class, 'destroy'])
+        ->name('returns.destroy');
+
+    Route::get('admin/returns/{id}', [ReturnController::class, 'show'])
+        ->name('returns.show');
 
 });
 

@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use App\Models\Orders;
 use App\Models\OrderItems; // Corrected import
 use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class MyOrdersController extends Controller
 {
@@ -23,10 +24,13 @@ class MyOrdersController extends Controller
             ->map(function ($order) {
                 return [
                     'id' => $order->id,
-                    'reference_number' => $order->reference_number, 
-                    'status' => $order->order_status,
+                    'reference_number' => $order->reference_number,
+                    'order_status' => $order->order_status,
+                    'return_refund_status' => $order->return_refund_status,
                     'order_date' => $order->created_at->format('Y-m-d'),
+                    'delivered_at' => $this->formatDateOrNull($order->delivered_at),
                     'total_amount' => $order->total_amount,
+                    'payment_method' => $order->payment_method,
                     'items' => $order->items->map(function ($item) {
                         return [
                             'product_name' => $item->product->name ?? 'Unknown Product',
@@ -45,5 +49,25 @@ class MyOrdersController extends Controller
             'orders' => $orders,
             'customer' => $customer,
         ]);
+    }
+
+    private function formatDateOrNull($date)
+    {
+        if (!$date) {
+            return null;
+        }
+
+        try {
+            if (is_string($date)) {
+                // If it's a string, try to create a Carbon instance
+                return \Carbon\Carbon::parse($date)->format('Y-m-d');
+            }
+
+            // If it's already a Carbon instance, just format it
+            return $date->format('Y-m-d');
+        } catch (\Exception $e) {
+            // If any error occurs during formatting, return null
+            return null;
+        }
     }
 }

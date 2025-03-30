@@ -10,13 +10,15 @@ use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Auth;
+use App\Models\WishlistItem;
 
 class ProductListController extends Controller
 {
     public function index(Request $request)
     {
         $query = Product::query()
-            ->select(['id', 'name', 'slug', 'description', 'brand_id', 'category_id', 'product_images', 'price'])
+            ->select(['id', 'name', 'slug', 'description', 'brand_id', 'category_id', 'product_images', 'price', 'stock'])
             ->with([
                 'category:id,name',
                 'brand:id,name',
@@ -38,6 +40,15 @@ class ProductListController extends Controller
             ]));
 
         $filteredProductIds = (clone $query)->pluck('id');
+
+        // Get wishlist items if customer is logged in
+        $wishlistProductIds = [];
+        if (Auth::guard('customer')->check()) {
+            $customer = Auth::guard('customer')->user();
+            $wishlistProductIds = WishlistItem::where('customer_id', $customer->id)
+                ->pluck('product_id')
+                ->toArray();
+        }
 
         $categories = Category::select(['categories.id', 'categories.name'])
             ->leftJoin('products', 'categories.id', '=', 'products.category_id')
@@ -65,7 +76,7 @@ class ProductListController extends Controller
 
         $products = $query->paginate(16);
 
-        $products->getCollection()->transform(function ($product) {
+        $products->getCollection()->transform(function ($product) use ($wishlistProductIds) {
             return [
                 'id' => $product->id,
                 'name' => $product->name,
@@ -75,7 +86,9 @@ class ProductListController extends Controller
                 'product_images' => $product->product_images,
                 'category' => $product->category->name,
                 'brand' => $product->brand->name,
+                'stock' => $product->stock,
                 'variants' => $product->variants,
+                'in_wishlist' => in_array($product->id, $wishlistProductIds),
                 'specifications' => $product->specifications->map(function($spec) {
                     return [
                         'name' => $spec->name,

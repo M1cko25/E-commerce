@@ -140,7 +140,14 @@ class OrderController extends Controller
 
     public function updateStatus(Request $request, $id){
         $order = Orders::findOrFail($id);
+        $oldStatus = $order->order_status;
         $order->order_status = $request->status;
+
+        // If order is being marked as delivered, set the delivered_at timestamp
+        if ($request->status === 'delivered' && $oldStatus !== 'delivered') {
+            $order->delivered_at = now();
+        }
+
         $order->save();
 
         return back()->with('success', 'Order status updated successfully');

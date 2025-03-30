@@ -22,7 +22,7 @@ import RoofSheets from "@/images/roofSheets.png";
 import HydraulicHinges from "@/images/hydraulicHinges.png";
 import { usePage } from "@inertiajs/vue3";
 import { useAI } from "@/Api/ai";
-
+import WishlistButton from "../../Components/WishlistButton.vue";
 const page = usePage();
 const landingContents = page.props.landingContents;
 
@@ -503,9 +503,13 @@ const deleteHistoryConversation = async (event, promptId) => {
 
                   <!-- Action Buttons -->
                   <div class="flex space-x-1 sm:space-x-2 mt-1 sm:mt-2">
-                    <button class="p-1.5 sm:p-1.5 primary-text main rounded-lg">
-                      <HeartIcon class="h-4 w-4 sm:h-5 sm:w-5 hover:text-red-500" />
-                    </button>
+                    <WishlistButton
+                      :product-id="latestProduct.id"
+                      :initial-wishlist-state="latestProduct.in_wishlist"
+                      size="small"
+                      icon-class="h-4 w-4 sm:h-5 sm:w-5"
+                      button-class="p-1.5 sm:p-1.5 primary-text main rounded-lg"
+                    />
                     <button
                       @click.prevent="addToCart(latestProduct)"
                       class="p-1.5 sm:p-1.5 text-white bg-navy-900 rounded-lg"
@@ -674,9 +678,13 @@ const deleteHistoryConversation = async (event, promptId) => {
 
               <!-- Action Buttons -->
               <div class="flex space-x-1 sm:space-x-2 mt-1 sm:mt-2">
-                <button class="p-1.5 sm:p-1.5 primary-text main rounded-lg">
-                  <HeartIcon class="h-4 w-4 sm:h-5 sm:w-5 hover:text-red-500" />
-                </button>
+                <WishlistButton
+                  :product-id="product.id"
+                  :initial-wishlist-state="product.in_wishlist"
+                  size="small"
+                  icon-class="h-4 w-4 sm:h-5 sm:w-5"
+                  button-class="p-1.5 sm:p-1.5 primary-text main rounded-lg"
+                />
                 <button
                   @click.prevent="addToCart(product)"
                   class="p-1.5 sm:p-1.5 button-primary rounded-lg"

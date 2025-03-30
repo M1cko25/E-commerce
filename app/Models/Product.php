@@ -85,4 +85,12 @@ class Product extends Model
     public function productSpecifications() {
         return $this->hasMany(ProductSpecification::class);
     }
+
+    /**
+     * Get the wishlist entries for this product
+     */
+    public function wishlistItems()
+    {
+        return $this->hasMany(WishlistItem::class);
+    }
 }

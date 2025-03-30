@@ -45,8 +45,8 @@
               >
                 Availability
                 <span class="ml-2">
-                  <ChevronUpIcon v-if="dropdowns.availability" class="h-4 w-4" />
-                  <ChevronDownIcon v-else class="h-4 w-4" />
+                  <ChevronUp v-if="dropdowns.availability" class="h-4 w-4" />
+                  <ChevronDown v-else class="h-4 w-4" />
                 </span>
               </h3>
               <div v-show="dropdowns.availability" class="space-y-2">
@@ -69,8 +69,8 @@
               >
                 Brands
                 <span class="ml-2">
-                  <ChevronUpIcon v-if="dropdowns.brands" class="h-4 w-4" />
-                  <ChevronDownIcon v-else class="h-4 w-4" />
+                  <ChevronUp v-if="dropdowns.brands" class="h-4 w-4" />
+                  <ChevronDown v-else class="h-4 w-4" />
                 </span>
               </h3>
               <div
@@ -106,8 +106,8 @@
               >
                 Categories
                 <span class="ml-2">
-                  <ChevronUpIcon v-if="dropdowns.categories" class="h-4 w-4" />
-                  <ChevronDownIcon v-else class="h-4 w-4" />
+                  <ChevronUp v-if="dropdowns.categories" class="h-4 w-4" />
+                  <ChevronDown v-else class="h-4 w-4" />
                 </span>
               </h3>
               <div
@@ -188,7 +188,7 @@
                 <!-- Product Details -->
                 <div>
                   <div class="flex items-center mb-1">
-                    <StarIcon
+                    <Star
                       v-for="n in 5"
                       :key="n"
                       class="h-3 w-3 sm:h-4 sm:w-4"
@@ -209,17 +209,18 @@
 
                 <!-- Action Buttons -->
                 <div class="flex space-x-1 sm:space-x-2 mt-2 sm:mt-5">
-                  <button
-                    @click.prevent="toggleWishlist(product.id)"
-                    class="p-1.5 sm:p-1.5 primary-text main rounded-lg"
-                  >
-                    <HeartIcon class="h-4 w-4 sm:h-5 sm:w-5 hover:text-red-500" />
-                  </button>
+                  <WishlistButton
+                    :product-id="product.id"
+                    :initial-wishlist-state="product.in_wishlist"
+                    size="small"
+                    icon-class="h-4 w-4 sm:h-5 sm:w-5"
+                    button-class="p-1.5 sm:p-1.5 primary-text main rounded-lg"
+                  />
                   <button
                     @click.prevent="addToCart(product)"
                     class="p-1.5 sm:p-1.5 button-primary rounded-lg"
                   >
-                    <ShoppingCartIcon class="h-4 w-4 sm:h-5 sm:w-5" />
+                    <ShoppingCart class="h-4 w-4 sm:h-5 sm:w-5" />
                   </button>
                 </div>
               </div>
@@ -260,10 +261,10 @@
                 ]"
               >
                 <template v-if="link.label.includes('Previous')">
-                  <ChevronLeftIcon class="h-5 w-5" />
+                  <ChevronLeft class="h-5 w-5" />
                 </template>
                 <template v-else-if="link.label.includes('Next')">
-                  <ChevronRightIcon class="h-5 w-5" />
+                  <ChevronRight class="h-5 w-5" />
                 </template>
                 <template v-else>
                   {{ link.label }}
@@ -287,19 +288,19 @@
 import { ref, watch } from "vue";
 import { Link, useForm, router } from "@inertiajs/vue3";
 import {
-  HeartIcon,
-  ShoppingCartIcon,
-  StarIcon,
-  ChevronDownIcon,
-  ChevronUpIcon,
-  ChevronLeftIcon,
-  ChevronRightIcon,
+  ShoppingCart,
+  Star,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-vue-next";
 import NavLink from "../../Components/NavLink.vue";
 import Footer from "../../Components/Footer.vue";
 import { usePage } from "@inertiajs/vue3";
 import debounce from "lodash/debounce";
 import AddToCartModal from "../../Components/AddToCartModal.vue";
+import WishlistButton from "../../Components/WishlistButton.vue";
 
 const props = defineProps({
   products: Object,

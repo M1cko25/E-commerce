@@ -80,10 +80,12 @@
                             </div>
                             <div class="flex gap-2">
                             <button
-                                v-if="currentTab === 'delivered'"
+                                v-if="currentTab === 'delivered' && isEligibleForReturn(order)"
                                 class="px-3 py-1 text-sm bg-navy-600 text-white rounded hover:bg-navy-700"
                             >
-                                Review
+                                <Link :href="route('customer.returnRequest', order.reference_number)">
+                                    Request Return/Refund
+                                </Link>
                             </button>
                             <Link
                                 :href="route('customer.orderDetails', order.reference_number)"
@@ -146,7 +148,7 @@ const getDate = (date) =>
 
     // Computed
     const filteredOrders = computed(() => {
-        return props.orders.filter((order) => order.status === currentTab.value);
+        return props.orders.filter((order) => order.order_status === currentTab.value);
     });
 
     // Methods
@@ -163,6 +165,26 @@ const getDate = (date) =>
             cancelled: "You don't have any cancelled orders. That's good news!"
         };
         return messages[status] || "No orders found.";
+    };
+
+    // Check if an order is eligible for return (within 7 days of delivery)
+    const isEligibleForReturn = (order) => {
+        // Only delivered orders can be returned
+        if (order.order_status !== 'delivered') {
+            return false;
+        }
+
+        // Only allow returns if return status is 'none' (not already requested)
+        if (order.return_refund_status && order.return_refund_status !== 'none') {
+            return false;
+        }
+
+        // Check if the order was delivered within the last 7 days
+        const deliveryDate = new Date(order.delivered_at || order.updated_at);
+        const currentDate = new Date();
+        const daysDifference = Math.floor((currentDate - deliveryDate) / (1000 * 60 * 60 * 24));
+
+        return daysDifference <= 7;
     };
     </script>
 

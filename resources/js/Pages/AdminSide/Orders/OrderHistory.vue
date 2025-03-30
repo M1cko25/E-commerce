@@ -7,48 +7,110 @@
     <!-- Main Content -->
     <main class="lg:ml-64 min-h-screen">
       <!-- Header -->
-      <Header title="Order History"></Header>
+      <Header
+        title="Order History"
+        @search="handleHeaderSearch"
+        @search-clear="clearHeaderSearch"
+        :initial-search-query="searchQuery"
+        ref="headerRef"
+      ></Header>
 
       <!-- Main Content Area -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <!-- Order History Header -->
         <div class="flex justify-between items-center mb-6">
+          <div class="flex space-x-4">
+            <!-- Filter Dropdown -->
           <div class="relative">
             <button
               @click="isFilterOpen = !isFilterOpen"
               class="flex items-center px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
             >
               <FilterIcon class="h-5 w-5 mr-2" />
-              Filter by
+                Filter by {{ currentFilter !== 'all' ? ': ' + getFilterLabel(currentFilter) : '' }}
               <ChevronDownIcon class="ml-2 h-5 w-5" />
             </button>
+              <div
+                v-if="isFilterOpen"
+                class="absolute mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1"
+              >
+                <button
+                  v-for="filter in filterOptions"
+                  :key="filter.value"
+                  @click="applyFilter(filter.value)"
+                  class="block w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+                  :class="{'bg-gray-100': currentFilter === filter.value}"
+                >
+                  {{ filter.label }}
+                </button>
+              </div>
           </div>
+
+            <!-- Sort Dropdown -->
           <div class="relative">
-            <input
-              type="text"
-              v-model="searchQuery"
-              placeholder="Search"
-              class="pl-10 pr-4 py-2 border rounded-lg w-64"
-            />
-            <SearchIcon class="h-5 w-5 text-gray-400 absolute left-3 top-2.5" />
+              <button
+                @click="isSortOpen = !isSortOpen"
+                class="flex items-center px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
+              >
+                Sort by: {{ currentSort.label }}
+                <ChevronDownIcon class="ml-2 h-5 w-5" />
+              </button>
+              <div
+                v-if="isSortOpen"
+                class="absolute mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1"
+              >
+                <button
+                  v-for="sort in sortOptions"
+                  :key="sort.value"
+                  @click="applySort(sort)"
+                  class="block w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+                  :class="{'bg-gray-100': currentSort.value === sort.value}"
+                >
+                  {{ sort.label }}
+                  <span v-if="currentSort.value === sort.value" class="float-right">
+                    {{ currentSort.direction === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Filter Tags -->
+            <div v-if="currentFilter !== 'all'" class="flex items-center">
+              <span class="px-2 py-1 bg-navy-100 text-navy-800 text-sm rounded-md flex items-center">
+                {{ getFilterLabel(currentFilter) }}
+                <button @click="clearFilter" class="ml-1 text-navy-500 hover:text-navy-700">
+                  <XIcon class="h-4 w-4" />
+                </button>
+              </span>
+            </div>
+
+            <!-- Active Search Tag -->
+            <div v-if="searchQuery" class="flex items-center">
+              <span class="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md flex items-center">
+                Search: "{{ searchQuery }}"
+                <button @click="clearHeaderSearch" class="ml-1 text-blue-500 hover:text-blue-700">
+                  <XIcon class="h-4 w-4" />
+                </button>
+              </span>
+            </div>
           </div>
         </div>
 
         <!-- Orders Grid -->
         <div v-if="!showOrderDetails">
           <!-- No Orders Message -->
-          <div v-if="!filteredOrders.length" class="text-center py-12">
+          <div v-if="!filteredAndSortedOrders.length" class="text-center py-12">
             <div class="flex flex-col items-center justify-center">
               <ShoppingBag class="h-12 w-12 text-gray-400 mb-4" />
-              <h3 class="text-lg font-medium text-gray-900">No valid orders yet</h3>
-              <p class="mt-1 text-sm text-gray-500">Orders that are pending will appear here once validated.</p>
+              <h3 class="text-lg font-medium text-gray-900">No orders found</h3>
+              <p class="mt-1 text-sm text-gray-500">Try adjusting your filters or search criteria.</p>
             </div>
           </div>
 
           <!-- Orders Grid -->
           <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div
-              v-for="order in filteredOrders"
+              v-for="order in filteredAndSortedOrders"
               :key="order.id"
               class="bg-white rounded-lg p-6 border border-gray-200"
             >
@@ -68,15 +130,21 @@
               </div>
               <p class="text-gray-600">{{ order.customer_name}}</p>
               <p class="text-gray-600">Date: {{ new Date(order.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) }}</p>
-              <p class="font-semibold text-xl mt-2">Total: ₱{{ order.total_amount }}</p>
+              <div class="flex justify-between items-center mt-2">
+                <p class="font-semibold text-lg">₱{{ order.total_amount }}</p>
+                <span :class="[
+                  'px-2 py-1 text-xs rounded-full',
+                  order.payment_method === 'cod' ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
+                ]">
+                  {{ order.payment_method }}
+                </span>
+              </div>
               <button
                 @click="viewOrderDetails(order)"
-                class="w-full mt-4 bg-navy-blue text-white py-2 rounded-lg hover:bg-navy-blue-dark"
+                class="w-full mt-4 bg-navy-900 text-white py-2 rounded-lg hover:bg-navy-700"
               >
                 View Details
               </button>
-
-
             </div>
           </div>
         </div>
@@ -121,6 +189,13 @@
               <div class="text-right">
                 <p class="text-gray-600">Total:</p>
                 <p class="text-2xl font-semibold">₱{{ selectedOrder.total_amount }}</p>
+                <p class="text-gray-600 mt-2">Payment Method:</p>
+                <span :class="[
+                  'px-2 py-1 text-xs rounded-full inline-block mt-1',
+                  selectedOrder.payment_method === 'cod' ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
+                ]">
+                  {{ selectedOrder.payment_method }}
+                </span>
               </div>
             </div>
           </div>
@@ -165,7 +240,7 @@
                 </div>
                 <div>
                   <p class="text-gray-600 mb-1">Estimated Delivery:</p>
-                  <p class="font-medium">{{ selectedOrder.estimatedDelivery }}</p>
+                  <p class="font-medium">{{ selectedOrder.estimatedDelivery || 'To be determined' }}</p>
                 </div>
               </div>
             </div>
@@ -187,8 +262,11 @@
           </div>
         </div>
         <!-- Pagination Links -->
-        <div v-if="filteredOrders.length && !showOrderDetails" class="flex items-center justify-between mt-6">
+        <div v-if="filteredAndSortedOrders.length && !showOrderDetails" class="flex items-center justify-between mt-6">
           <div class="flex items-center">
+            <span class="text-sm text-gray-700">
+              Showing {{ filteredAndSortedOrders.length }} result(s)
+            </span>
           </div>
           <div class="flex gap-2">
             <Link
@@ -222,8 +300,8 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
-import { Head, usePage } from '@inertiajs/vue3'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { Head, usePage, Link } from '@inertiajs/vue3'
 import Sidebar from '../../../Components/Sidebar.vue'
 import Header from '../../../Components/Header.vue'
 import {
@@ -236,7 +314,8 @@ import {
   CircleCheckBig,
   Truck,
   X,
-  Loader2
+  Loader2,
+  XIcon
 } from 'lucide-vue-next'
 
 const props = defineProps({
@@ -245,28 +324,116 @@ const props = defineProps({
 
 const page = usePage()
 
-
 // State
 const searchQuery = ref('')
-const filterStatus = ref('all')
+const isFilterOpen = ref(false)
+const isSortOpen = ref(false)
+const currentFilter = ref('all')
 const showOrderDetails = ref(false)
 const selectedOrder = ref(null)
-const showFilterMenu = ref(false)
-const showProfileMenu = ref(false)
+const headerRef = ref(null)
 
-// Computed
-const filteredOrders = computed(() => {
-  return props.order.data.filter(order => {
-    // Exclude pending orders
-    if (order.order_status === 'pending') {
-      return false
+// Filter options
+const filterOptions = [
+  { label: 'All Orders', value: 'all' },
+  { label: 'Processing', value: 'processing' },
+  { label: 'Shipped', value: 'shipped' },
+  { label: 'Delivered', value: 'delivered' },
+  { label: 'Cancelled', value: 'cancelled' },
+  { label: 'COD Orders', value: 'cod' },
+  { label: 'GCash Orders', value: 'gcash' },
+  { label: 'High Value (>₱1000)', value: 'high_value' },
+  { label: 'Recent (Last 7 Days)', value: 'recent' },
+];
+
+// Sort options
+const currentSort = ref({
+  value: 'created_at',
+  direction: 'desc',
+  label: 'Date (Newest First)'
+});
+
+const sortOptions = [
+  { value: 'created_at', label: 'Date' },
+  { value: 'total_amount', label: 'Amount' },
+  { value: 'customer_name', label: 'Customer Name' },
+  { value: 'reference_number', label: 'Order ID' },
+];
+
+// Filter and sort the orders
+const filteredAndSortedOrders = computed(() => {
+  let result = [...props.order.data];
+
+  // First apply text search
+  if (searchQuery.value.trim()) {
+    const query = searchQuery.value.toLowerCase();
+    result = result.filter(order => {
+      return order.reference_number.toLowerCase().includes(query) ||
+             order.customer_name.toLowerCase().includes(query) ||
+             (order.payment_method && order.payment_method.toLowerCase().includes(query)) ||
+             order.order_status.toLowerCase().includes(query);
+    });
+  }
+
+  // Then apply filter
+  if (currentFilter.value !== 'all') {
+    const oneWeekAgo = new Date();
+    oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+    switch (currentFilter.value) {
+      case 'processing':
+        result = result.filter(order => order.order_status === 'processing');
+        break;
+      case 'shipped':
+        result = result.filter(order => order.order_status === 'shipped');
+        break;
+      case 'delivered':
+        result = result.filter(order => order.order_status === 'delivered');
+        break;
+      case 'cancelled':
+        result = result.filter(order => order.order_status === 'cancelled');
+        break;
+      case 'cod':
+        result = result.filter(order => order.payment_method === 'cod');
+        break;
+      case 'gcash':
+        result = result.filter(order => order.payment_method === 'gcash');
+        break;
+      case 'high_value':
+        result = result.filter(order => parseFloat(order.total_amount) > 1000);
+        break;
+      case 'recent':
+        result = result.filter(order => {
+          const orderDate = new Date(order.created_at);
+          return orderDate >= oneWeekAgo;
+        });
+        break;
+    }
+  }
+
+  // Finally, apply sorting
+  result.sort((a, b) => {
+    let comparison = 0;
+
+    switch (currentSort.value.value) {
+      case 'created_at':
+        comparison = new Date(a.created_at) - new Date(b.created_at);
+        break;
+      case 'total_amount':
+        comparison = parseFloat(a.total_amount) - parseFloat(b.total_amount);
+        break;
+      case 'customer_name':
+        comparison = a.customer_name.localeCompare(b.customer_name);
+        break;
+      case 'reference_number':
+        comparison = a.reference_number.localeCompare(b.reference_number);
+        break;
     }
 
-    const matchesSearch = order.reference_number.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-                         order.customer_name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesStatus = filterStatus.value === 'all' || order.order_status === filterStatus.value
-    return matchesSearch && matchesStatus
-  })
+    return currentSort.value.direction === 'asc' ? comparison : -comparison;
+  });
+
+  return result;
 })
 
 // Methods
@@ -274,14 +441,85 @@ const viewOrderDetails = (order) => {
   selectedOrder.value = order
   showOrderDetails.value = true
 }
+
+const handleHeaderSearch = (query) => {
+  searchQuery.value = query;
+};
+
+const clearHeaderSearch = () => {
+  searchQuery.value = '';
+  if (headerRef.value) {
+    headerRef.value.clearSearch();
+  }
+};
+
+const applyFilter = (filter) => {
+  currentFilter.value = filter;
+  isFilterOpen.value = false;
+};
+
+const clearFilter = () => {
+  currentFilter.value = 'all';
+};
+
+const applySort = (sort) => {
+  // If clicking the same sort option, toggle direction
+  if (currentSort.value.value === sort.value) {
+    currentSort.value = {
+      ...sort,
+      direction: currentSort.value.direction === 'asc' ? 'desc' : 'asc',
+      label: sort.label + (currentSort.value.direction === 'asc' ? ' (Oldest First)' : ' (Newest First)')
+    };
+  } else {
+    // New sort option
+    currentSort.value = {
+      ...sort,
+      direction: 'desc',
+      label: sort.label + (sort.value === 'total_amount' ? ' (Highest First)' : ' (Newest First)')
+    };
+  }
+  isSortOpen.value = false;
+};
+
+const getFilterLabel = (filterValue) => {
+  const option = filterOptions.find(option => option.value === filterValue);
+  return option ? option.label : filterValue;
+};
+
+const handleClickOutside = (event) => {
+  if (!event.target.closest('button') || !event.target.closest('button').contains(ChevronDownIcon)) {
+    isFilterOpen.value = false;
+    isSortOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <style>
 /* Add any additional styles here if needed */
-.bg-navy-blue {
+.bg-navy-900 {
   background-color: #0A1E4C;
 }
-.bg-navy-blue-dark {
-  background-color: #081738;
+.bg-navy-700 {
+  background-color: #151c63;
+}
+.bg-navy-100 {
+  background-color: #E6E6FF;
+}
+.text-navy-800 {
+  color: #001044;
+}
+.text-navy-700 {
+  color: #151c63;
+}
+.text-navy-500 {
+  color: #3A3F9E;
 }
 </style>

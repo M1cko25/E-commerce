@@ -28,10 +28,10 @@
                   <h2 class="font-semibold text-gray-900">Delivery Information</h2>
                   <div class="mt-2 text-sm text-gray-600">
                     <p class="font-semibold text-gray-900">
-                      {{ customer.first_name }} {{ customer.last_name }}
+                      {{ selectedAddress ? `${selectedAddress.first_name} ${selectedAddress.last_name}` : `${customer.first_name} ${customer.last_name}` }}
                     </p>
                     <p class="text-gray-900">
-                      {{ customer.phone }}
+                      {{ selectedAddress ? selectedAddress.phone_number : customer.phone }}
                     </p>
                     <p>
                       {{ customer.email }}
@@ -41,20 +41,22 @@
               </div>
 
               <!-- Right Section (Addresses aligned to flex-end) -->
-
               <div class="text-right text-sm">
                 <button
-                  @click="showEditModal = true"
+                  @click="showAddressSelectionModal = true"
                   class="mt-2 mb-4 px-4 py-1 text-sm bg-navy-900 text-white rounded hover:bg-navy-800"
                 >
-                  Edit
+                  {{ selectedAddress ? 'Change' : 'Select' }} Address
                 </button>
-                <p class="text-gray-900">
-                  {{ customer.address.complete_address }}
+                <p v-if="selectedAddress" class="text-gray-900">
+                  {{ selectedAddress.complete_address }}
                 </p>
-                <p class="text-gray-900">
-                  {{ customer.address.province }}, {{ customer.address.city }},
-                  {{ customer.address.zip_code }}
+                <p v-if="selectedAddress" class="text-gray-900">
+                  {{ selectedAddress.province }}, {{ selectedAddress.city }},
+                  {{ selectedAddress.zip_code }}
+                </p>
+                <p v-else class="text-yellow-600 font-medium">
+                  Please select a delivery address
                 </p>
               </div>
             </div>
@@ -371,6 +373,99 @@
         </div>
       </Dialog>
     </TransitionRoot>
+
+    <!-- Address Selection Modal -->
+    <TransitionRoot appear :show="showAddressSelectionModal" as="template">
+      <Dialog as="div" @close="showAddressSelectionModal = false" class="relative z-50">
+        <TransitionChild
+          as="template"
+          enter="duration-300 ease-out"
+          enter-from="opacity-0"
+          enter-to="opacity-100"
+          leave="duration-200 ease-in"
+          leave-from="opacity-100"
+          leave-to="opacity-0"
+        >
+          <div class="fixed inset-0 bg-black bg-opacity-25" />
+        </TransitionChild>
+
+        <div class="fixed inset-0 overflow-y-auto">
+          <div class="flex min-h-full items-center justify-center p-4 text-center">
+            <TransitionChild
+              as="template"
+              enter="duration-300 ease-out"
+              enter-from="opacity-0 scale-95"
+              enter-to="opacity-100 scale-100"
+              leave="duration-200 ease-in"
+              leave-from="opacity-100 scale-100"
+              leave-to="opacity-0 scale-95"
+            >
+              <DialogPanel
+                class="w-full max-w-md transform overflow-hidden rounded-lg bg-white p-6 text-left align-middle shadow-xl transition-all"
+              >
+                <DialogTitle as="h3" class="text-lg font-medium text-gray-900 mb-4">
+                  Select Delivery Address
+                </DialogTitle>
+
+                <div class="max-h-80 overflow-y-auto">
+                  <div v-if="addresses && addresses.length > 0">
+                    <div
+                      v-for="address in addresses"
+                      :key="address.id"
+                      @click="selectAddress(address)"
+                      class="border rounded-lg p-4 mb-3 hover:border-navy-600 cursor-pointer"
+                      :class="{ 'border-navy-600 bg-navy-50': selectedAddressId === address.id }"
+                    >
+                      <div class="flex justify-between items-start">
+                        <div>
+                          <h3 class="font-medium">{{ address.first_name }} {{ address.last_name }}</h3>
+                          <p class="text-sm text-gray-600">{{ address.phone_number }}</p>
+                          <div class="text-sm text-gray-700 mt-1">
+                            <p>{{ address.complete_address }}</p>
+                            <p>{{ address.city }}, {{ address.province }} {{ address.zip_code }}</p>
+                          </div>
+                        </div>
+                        <div v-if="address.default_address" class="bg-navy-100 text-navy-700 text-xs px-2 py-1 rounded-full">
+                          Default
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div v-else class="text-center py-8">
+                    <MapPinIcon class="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                    <h3 class="text-lg font-medium text-gray-900">No addresses found</h3>
+                    <p class="text-gray-500 mt-1 mb-4">Add a new shipping address to continue.</p>
+                    <Link
+                      :href="route('customer.addresses')"
+                      class="inline-block px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-navy-700"
+                    >
+                      Add New Address
+                    </Link>
+                  </div>
+                </div>
+
+                <div class="mt-6 flex justify-end space-x-3">
+                  <button
+                    @click="showAddressSelectionModal = false"
+                    class="px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    @click="confirmAddressSelection"
+                    :disabled="!selectedAddressId"
+                    class="px-4 py-2 bg-navy-600 text-white rounded-lg hover:bg-navy-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    Use Selected Address
+                  </button>
+                </div>
+              </DialogPanel>
+            </TransitionChild>
+          </div>
+        </div>
+      </Dialog>
+    </TransitionRoot>
+
     <!-- Payment Modal -->
     <div v-if="showPaymentModal" class="fixed inset-0 z-50 overflow-y-auto">
       <div class="flex items-center justify-center min-h-screen px-4">
@@ -569,10 +664,15 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  addresses: {
+    type: Array,
+    required: true,
+  },
 });
 
 // Form state
 const showEditModal = ref(false);
+const showAddressSelectionModal = ref(false);
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return "/storage/default.jpg";
@@ -589,6 +689,7 @@ const agreeToTerms = ref(false);
 const showPaymentModal = ref(false);
 const isLoading = ref(false);
 const showSuccessModal = ref(false);
+const selectedAddressId = ref(null);
 
 // Computed values
 const subtotal = computed(() => {
@@ -603,6 +704,13 @@ const total = computed(() => {
   return subtotal.value + deliveryFee.value;
 });
 
+const selectedAddress = computed(() => {
+  if (!selectedAddressId.value) {
+    return props.customer.address; // Fall back to default address from props
+  }
+  return props.addresses.find(address => address.id === selectedAddressId.value);
+});
+
 // Methods
 
 const updateAddress = () => {
@@ -612,6 +720,10 @@ const updateAddress = () => {
 
 const completePurchase = () => {
   if (!agreeToTerms.value) return;
+  if (!selectedAddress.value && deliveryMethod.value === 'delivery') {
+    alert('Please select a delivery address before proceeding');
+    return;
+  }
   showPaymentModal.value = true;
 };
 
@@ -620,14 +732,15 @@ const proceedToPayment = () => {
   if (paymentMethod.value === 'gcash') {
     isLoading.value = true;
 
-    // Create the shipping address string using props.customer
-    const shippingAddress = props.customer.address ?
-      `${props.customer.address.complete_address}, ${props.customer.address.city}, ${props.customer.address.province}, ${props.customer.address.zip_code}` : '';
+    // Create the shipping address string using the selected address
+    const shippingAddress = selectedAddress.value ?
+      `${selectedAddress.value.complete_address}, ${selectedAddress.value.city}, ${selectedAddress.value.province}, ${selectedAddress.value.zip_code}` : '';
 
     // Make a GET request to our backend to create the payment source
     router.get(route('customer.payment'), {
       notes: notes.value,  // Add notes from the form
-      shipping_address: shippingAddress  // Add formatted shipping address
+      shipping_address: shippingAddress,  // Add formatted shipping address
+      address_id: selectedAddress.value?.id // Send the selected address ID
     }, {
       preserveState: true,
       onSuccess: () => {
@@ -642,13 +755,16 @@ const proceedToPayment = () => {
     });
   } else {
     isLoading.value = true;
-    const shippingAddress = props.customer.address ?
-      `${props.customer.address.complete_address}, ${props.customer.address.city}, ${props.customer.address.province}, ${props.customer.address.zip_code}` : '';
+
+    // Create the shipping address string using the selected address
+    const shippingAddress = selectedAddress.value ?
+      `${selectedAddress.value.complete_address}, ${selectedAddress.value.city}, ${selectedAddress.value.province}, ${selectedAddress.value.zip_code}` : '';
 
     // Process Cash on Delivery order
     router.post(route('customer.processCod'), {
       notes: notes.value,
       shipping_address: shippingAddress,
+      address_id: selectedAddress.value?.id,
       delivery_method: deliveryMethod.value,
       payment_method: paymentMethod.value
     }, {
@@ -663,6 +779,15 @@ const proceedToPayment = () => {
       }
     });
   }
+};
+
+const selectAddress = (address) => {
+  selectedAddressId.value = address.id;
+};
+
+const confirmAddressSelection = () => {
+  // Implement logic to confirm address selection
+  showAddressSelectionModal.value = false;
 };
 
 watch(deliveryMethod, (newValue) => {

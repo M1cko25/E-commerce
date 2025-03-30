@@ -59,6 +59,14 @@ class Customer extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Orders::class);
     }
 
+    /**
+     * Get the customer's wishlist items
+     */
+    public function wishlistItems()
+    {
+        return $this->hasMany(WishlistItem::class);
+    }
+
     // Relationship with default address
     public function defaultAddress()
     {

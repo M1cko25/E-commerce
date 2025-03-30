@@ -30,7 +30,12 @@ class CheckoutController extends Controller
 
         // Get authenticated customer
         $customer = Auth::guard('customer')->user();
-        $address = CustomerAddresses::where('customer_id', $customer->id)->first();
+        $defaultAddress = $customer->default_address_id
+            ? CustomerAddresses::find($customer->default_address_id)
+            : null;
+
+        // Get all customer addresses
+        $addresses = CustomerAddresses::where('customer_id', $customer->id)->get();
 
         // Get selected cart items
         $selectedItems = CartItem::where('customer_id', $customer->id)
@@ -60,8 +65,9 @@ class CheckoutController extends Controller
                 'last_name' => $customer->last_name,
                 'email' => $customer->email,
                 'phone' => $customer->phone,
-                'address' => $address,
+                'address' => $defaultAddress,
             ],
+            'addresses' => $addresses,
             'items' => $selectedItems,
             'summary' => [
                 'subtotal' => $subtotal,
@@ -74,10 +80,19 @@ class CheckoutController extends Controller
     public function pay(Request $request)
     {
         $customer = Auth::guard('customer')->user();
-        $address = CustomerAddresses::where('customer_id', $customer->id)->first();
+
+        // Get address either from address_id or default
+        $address = null;
+        if ($request->address_id) {
+            $address = CustomerAddresses::where('customer_id', $customer->id)
+                ->where('id', $request->address_id)
+                ->first();
+        } else if ($customer->default_address_id) {
+            $address = CustomerAddresses::find($customer->default_address_id);
+        }
 
         if (!$address) {
-            return back()->withErrors(['error' => 'Please add a delivery address first.']);
+            return back()->withErrors(['error' => 'Please select a delivery address first.']);
         }
 
         // Get selected cart items
@@ -155,7 +170,8 @@ class CheckoutController extends Controller
                 'payment_method' => 'gcash',
                 'customer' => $customer,
                 'notes' => $request->input('notes'),  // Get notes from request
-                'shipping_address' => $request->input('shipping_address')  // Get shipping address from request
+                'shipping_address' => $request->input('shipping_address'),  // Get shipping address from request
+                'address_id' => $request->address_id,
             ]);
 
             // Return the checkout URL in an Inertia response
@@ -185,7 +201,8 @@ class CheckoutController extends Controller
             'status' => 'pending',
             'payment_status' => 'paid',
             'notes' => $paymentData['notes'] ?? null,
-            'shipping_address' => $paymentData['shipping_address']
+            'shipping_address' => $paymentData['shipping_address'],
+            'shipping_address_id' => $paymentData['address_id'] ?? null,
         ]);
 
         // Create order items
@@ -218,14 +235,26 @@ class CheckoutController extends Controller
         $request->validate([
             'notes' => 'nullable|string',
             'shipping_address' => 'nullable|string',
+            'address_id' => 'nullable|exists:customer_addresses,id',
+            'delivery_method' => 'required|string|in:delivery,pickup',
+            'payment_method' => 'required|string|in:cash,gcash',
         ]);
 
         // Get customer information
         $customer = Auth::guard('customer')->user();
-        $address = CustomerAddresses::where('customer_id', $customer->id)->first();
 
-        if (!$address && $request->input('delivery_method', 'delivery') === 'delivery') {
-            return back()->withErrors(['error' => 'Please add a delivery address first.']);
+        // Get address either from address_id or default
+        $address = null;
+        if ($request->address_id) {
+            $address = CustomerAddresses::where('customer_id', $customer->id)
+                ->where('id', $request->address_id)
+                ->first();
+        } else if ($customer->default_address_id) {
+            $address = CustomerAddresses::find($customer->default_address_id);
+        }
+
+        if (!$address && $request->input('delivery_method') === 'delivery') {
+            return back()->withErrors(['error' => 'Please select a delivery address first.']);
         }
 
         // Get selected cart items

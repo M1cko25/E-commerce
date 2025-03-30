@@ -25,7 +25,17 @@ class Orders extends Model
         'notes',
         'return_refund_status',
         'gcash_transaction_id',
-        'shipping_address'
+        'shipping_address',
+        'shipping_address_id',
+        'delivered_at'
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+        'estimated_delivery' => 'datetime',
+        'pickup_date_time' => 'datetime',
+        'delivered_at' => 'datetime',
     ];
 
     public function customer()
@@ -36,6 +46,11 @@ class Orders extends Model
     public function items()
     {
         return $this->hasMany(OrderItems::class, 'order_id');
+    }
+
+    public function shippingAddress()
+    {
+        return $this->belongsTo(CustomerAddresses::class, 'shipping_address_id');
     }
 
     protected static function booted()

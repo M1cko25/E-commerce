@@ -17,6 +17,9 @@ use App\Http\Middleware\EnsureCustomerIsAuthenticated;
 use App\Http\Controllers\Client\ClientProfileController;
 use App\Http\Controllers\Client\CategoryProductsController;
 use App\Http\Controllers\Client\ComponentSelectionController;
+use App\Http\Controllers\CustomerReturnController;
+use App\Http\Controllers\CustomerAddressController;
+use App\Http\Controllers\WishlistController;
 
 Route::middleware(['auth:customer'])->group(function () {
     Route::post('/customer/logout', [ClientRegisterController::class, 'destroy'])->name('customer.logout');
@@ -42,6 +45,18 @@ Route::middleware(['auth:customer'])->group(function () {
         Route::get('/customer/profile', [ClientProfileController::class, 'index'])
             ->name('customer.profile');
 
+        // Customer Address Routes
+        Route::get('/customer/addresses', [CustomerAddressController::class, 'index'])
+            ->name('customer.addresses');
+        Route::post('/customer/addresses', [CustomerAddressController::class, 'store'])
+            ->name('customer.addresses.store');
+        Route::put('/customer/addresses/{id}', [CustomerAddressController::class, 'update'])
+            ->name('customer.addresses.update');
+        Route::delete('/customer/addresses/{id}', [CustomerAddressController::class, 'destroy'])
+            ->name('customer.addresses.destroy');
+        Route::patch('/customer/addresses/{id}/default', [CustomerAddressController::class, 'setDefault'])
+            ->name('customer.addresses.default');
+
         Route::get('/customer/checkout', [CheckoutController::class, 'index'])
             ->name('customer.checkout');
         // Route::post('/customer/checkout', [CheckoutController::class, 'store'])
@@ -51,6 +66,17 @@ Route::middleware(['auth:customer'])->group(function () {
             ->name('customer.payment.success');
         Route::get('/customer/my-orders', [MyOrdersController::class, 'index'])
             ->name('customer.myOrders');
+
+        // Wishlist Routes
+        Route::get('/customer/wishlist', [WishlistController::class, 'index'])
+            ->name('customer.wishlist');
+        Route::post('/customer/wishlist', [WishlistController::class, 'store'])
+            ->name('customer.wishlist.store');
+        Route::delete('/customer/wishlist/{id}', [WishlistController::class, 'destroy'])
+            ->name('customer.wishlist.destroy');
+        Route::post('/customer/wishlist/toggle', [WishlistController::class, 'toggle'])
+            ->name('customer.wishlist.toggle');
+
         Route::get('payment', [CheckoutController::class, 'pay'])
             ->name('customer.payment');
         Route::post('process-cod', [CheckoutController::class, 'processCod'])
@@ -62,7 +88,13 @@ Route::middleware(['auth:customer'])->group(function () {
         Route::get('invoice/download/{reference_number}', [OrderDetailsController::class, 'downloadInvoice'])
             ->name('invoice.download');
 
-
+        // Return and Refund Routes
+        Route::get('/customer/returns/{reference_number}', [CustomerReturnController::class, 'showReturnForm'])
+            ->name('customer.returnRequest');
+        Route::post('/customer/returns/{reference_number}', [CustomerReturnController::class, 'submitReturnRequest'])
+            ->name('customer.submitReturn');
+        Route::post('/customer/returns/{reference_number}/cancel', [CustomerReturnController::class, 'cancelReturnRequest'])
+            ->name('customer.cancelReturn');
 
         Route::inertia('/customer/try', 'ClientSide/Customer/Try');
 

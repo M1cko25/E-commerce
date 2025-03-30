@@ -49,7 +49,7 @@
             </Link>
 
             <Link
-
+              :href="route('customer.addresses')"
               :class="[
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                 route().current('customer.addresses')
@@ -62,10 +62,10 @@
             </Link>
 
             <Link
-
+              :href="route('customer.wishlist')"
               :class="[
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
-                route().current('customer.wishlists')
+                route().current('customer.wishlist')
                   ? 'text-blue-600 bg-blue-50'
                   : 'text-gray-600 hover:bg-gray-50'
               ]"
@@ -75,7 +75,6 @@
             </Link>
 
             <Link
-
               :class="[
                 'flex items-center gap-3 px-4 py-3 rounded-lg transition-colors',
                 route().current('customer.security')

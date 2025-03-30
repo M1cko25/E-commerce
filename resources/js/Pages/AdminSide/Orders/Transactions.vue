@@ -8,30 +8,94 @@
     <!-- Main Content -->
     <main class="lg:ml-64 min-h-screen">
       <!-- Header -->
-      <Header title="Transactions"></Header>
+      <Header
+        title="Transactions"
+        @search="handleHeaderSearch"
+        @search-clear="clearHeaderSearch"
+        :initial-search-query="headerSearchQuery"
+        ref="headerRef"
+      ></Header>
 
-      <!-- Employees Content -->
+      <!-- Transactions Content -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="flex justify-between items-center mb-6">
-          <div class="relative">
-            <button
-              @click="isFilterOpen = !isFilterOpen"
-              class="flex items-center px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
-            >
-              Filter by
-              <ChevronDownIcon class="ml-2 h-5 w-5" />
-            </button>
+          <div class="flex space-x-4">
             <!-- Filter Dropdown -->
-            <div
-              v-if="isFilterOpen"
-              class="absolute mt-2 w-48 bg-white roun ded-md shadow-lg z-10"
-            >
-              <!-- Add filter options here -->
+            <div class="relative">
+              <button
+                @click="isFilterOpen = !isFilterOpen"
+                class="flex items-center px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
+              >
+                Filter by {{ currentFilter !== 'all' ? ': ' + getFilterLabel(currentFilter) : '' }}
+                <ChevronDownIcon class="ml-2 h-5 w-5" />
+              </button>
+              <div
+                v-if="isFilterOpen"
+                class="absolute mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1"
+              >
+                <button
+                  v-for="filter in filterOptions"
+                  :key="filter.value"
+                  @click="applyFilter(filter.value)"
+                  class="block w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+                  :class="{'bg-gray-100': currentFilter === filter.value}"
+                >
+                  {{ filter.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="relative">
+              <button
+                @click="isSortOpen = !isSortOpen"
+                class="flex items-center px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
+              >
+                Sort by: {{ currentSort.label }}
+                <ChevronDownIcon class="ml-2 h-5 w-5" />
+              </button>
+              <div
+                v-if="isSortOpen"
+                class="absolute mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1"
+              >
+                <button
+                  v-for="sort in sortOptions"
+                  :key="sort.value"
+                  @click="applySort(sort)"
+                  class="block w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+                  :class="{'bg-gray-100': currentSort.value === sort.value}"
+                >
+                  {{ sort.label }}
+                  <span v-if="currentSort.value === sort.value" class="float-right">
+                    {{ currentSort.direction === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Filter Tags -->
+            <div v-if="currentFilter !== 'all'" class="flex items-center">
+              <span class="px-2 py-1 bg-navy-100 text-navy-800 text-sm rounded-md flex items-center">
+                {{ getFilterLabel(currentFilter) }}
+                <button @click="clearFilter" class="ml-1 text-navy-500 hover:text-navy-700">
+                  <XIcon class="h-4 w-4" />
+                </button>
+              </span>
+            </div>
+
+            <!-- Active Search Tag -->
+            <div v-if="headerSearchQuery" class="flex items-center">
+              <span class="px-2 py-1 bg-blue-100 text-blue-800 text-sm rounded-md flex items-center">
+                Search: "{{ headerSearchQuery }}"
+                <button @click="clearHeaderSearch" class="ml-1 text-blue-500 hover:text-blue-700">
+                  <XIcon class="h-4 w-4" />
+                </button>
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- Employees Table -->
+        <!-- Transactions Table -->
         <div class="bg-white shadow-sm rounded-lg overflow-hidden border border-gray-200">
           <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
@@ -46,7 +110,7 @@
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="order in orders.data" :key="order.id">
+              <tr v-for="order in filteredAndSortedOrders" :key="order.id">
                 <td class="px-6 py-4 whitespace-nowrap uppercase">{{ order.reference_number }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ order.customer_name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">
@@ -54,18 +118,32 @@
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ order.total_amount }}</td>
                 <td class="px-6 py-4 whitespace-nowrap upSpercase">
-                  {{ order.payment_status }}
+                  <span :class="[
+                    'px-2 py-1 text-xs rounded-full',
+                    order.payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                  ]">
+                    {{ order.payment_status }}
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap uppercase">
-                  {{ order.payment_method }}
+                  <span :class="[
+                    'px-2 py-1 text-xs rounded-full',
+                    order.payment_method === 'cod' ? 'bg-blue-100 text-blue-800' : 'bg-indigo-100 text-indigo-800'
+                  ]">
+                    {{ order.payment_method }}
+                  </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
                   <span
                     :class="[
-                      ' py-1 text-md uppercase ',
+                      'px-2 py-1 text-xs rounded-full',
                       order.order_status === 'pending'
-                        ? ' text-yellow-500'
-                        : 'bg-red-100 text-red-800',
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : order.order_status === 'processing'
+                        ? 'bg-blue-100 text-blue-800'
+                        : order.order_status === 'cancelled'
+                        ? 'bg-red-100 text-red-800'
+                        : 'bg-green-100 text-green-800',
                     ]"
                   >
                     {{ order.order_status }}
@@ -75,10 +153,15 @@
                 <td class="px-6 py-4 whitespace-nowrap text-right">
                   <button
                     @click="openActionMenu(order, $event)"
-                    class="text-gray-400 hover:text-gray-500 focus:outline-none"
+                    class="text-gray-400 hover:text-gray-500 focus:outline-none action-menu-trigger"
                   >
                     <MoreVerticalIcon class="h-5 w-5" />
                   </button>
+                </td>
+              </tr>
+              <tr v-if="filteredAndSortedOrders.length === 0">
+                <td colspan="8" class="px-6 py-4 text-center text-gray-500">
+                  No transactions found matching your criteria
                 </td>
               </tr>
             </tbody>
@@ -208,7 +291,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
+import { ref, onMounted, onUnmounted, computed } from "vue";
 import { Link, router, usePage } from "@inertiajs/vue3";
 import {
   MoreVerticalIcon,
@@ -232,21 +315,171 @@ const headers = ["Order ID", "Customer", "Date", "Total", "Payment Status", "Met
 const formatDateTime = (date) => {
   if (!date) return "No activity yet";
   return new Date(date).toLocaleString("en-us", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
     hour: "numeric",
     minute: "numeric",
-    hour12: true, // Use 12-hour format
+    hour12: true, // Use the 12-hour format
   });
 };
+
 const isFilterOpen = ref(false);
+const isSortOpen = ref(false);
 const showDeleteModal = ref(false);
+const showAcceptModal = ref(false);
 const activeActionMenu = ref(null);
 const dropdownPosition = ref({ top: 0, left: 0 });
 const userToDelete = ref(null);
 const errorMessage = ref(null);
 const toast = ref(null);
-const showAcceptModal = ref(false);
 const orderToAccept = ref(null);
 const orderToDecline = ref(null);
+const currentFilter = ref('all');
+const headerSearchQuery = ref('');
+const headerRef = ref(null);
+
+// Filter options
+const filterOptions = [
+  { label: 'All Transactions', value: 'all' },
+  { label: 'Pending Orders', value: 'pending' },
+  { label: 'Processing Orders', value: 'processing' },
+  { label: 'Paid Orders', value: 'paid' },
+  { label: 'COD Orders', value: 'cod' },
+  { label: 'GCash Orders', value: 'gcash' },
+  { label: 'High Value (>₱1000)', value: 'high_value' },
+  { label: 'Recent (Today)', value: 'today' },
+];
+
+// Sort options
+const currentSort = ref({
+  value: 'created_at',
+  direction: 'desc',
+  label: 'Date (Newest First)'
+});
+
+const sortOptions = [
+  { value: 'created_at', label: 'Date' },
+  { value: 'total_amount', label: 'Amount' },
+  { value: 'customer_name', label: 'Customer Name' },
+  { value: 'reference_number', label: 'Order ID' },
+];
+
+// Filter and sort the orders
+const filteredAndSortedOrders = computed(() => {
+  let result = [...props.orders.data];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  // Apply search filter first
+  if (headerSearchQuery.value.trim()) {
+    const query = headerSearchQuery.value.toLowerCase();
+    result = result.filter(order => {
+      return order.reference_number.toLowerCase().includes(query) ||
+             order.customer_name.toLowerCase().includes(query) ||
+             order.payment_method.toLowerCase().includes(query) ||
+             order.order_status.toLowerCase().includes(query);
+    });
+  }
+
+  // Apply category filters
+  if (currentFilter.value !== 'all') {
+    switch (currentFilter.value) {
+      case 'pending':
+        result = result.filter(order => order.order_status === 'pending');
+        break;
+      case 'processing':
+        result = result.filter(order => order.order_status === 'processing');
+        break;
+      case 'paid':
+        result = result.filter(order => order.payment_status === 'paid');
+        break;
+      case 'cod':
+        result = result.filter(order => order.payment_method === 'cod');
+        break;
+      case 'gcash':
+        result = result.filter(order => order.payment_method === 'gcash');
+        break;
+      case 'high_value':
+        result = result.filter(order => parseFloat(order.total_amount) > 1000);
+        break;
+      case 'today':
+        result = result.filter(order => {
+          const orderDate = new Date(order.created_at);
+          return orderDate >= today;
+        });
+        break;
+    }
+  }
+
+  // Apply sorting
+  result.sort((a, b) => {
+    let comparison = 0;
+
+    switch (currentSort.value.value) {
+      case 'created_at':
+        comparison = new Date(a.created_at) - new Date(b.created_at);
+        break;
+      case 'total_amount':
+        comparison = parseFloat(a.total_amount) - parseFloat(b.total_amount);
+        break;
+      case 'customer_name':
+        comparison = a.customer_name.localeCompare(b.customer_name);
+        break;
+      case 'reference_number':
+        comparison = a.reference_number.localeCompare(b.reference_number);
+        break;
+    }
+
+    return currentSort.value.direction === 'asc' ? comparison : -comparison;
+  });
+
+  return result;
+});
+
+const handleHeaderSearch = (query) => {
+  headerSearchQuery.value = query;
+};
+
+const clearHeaderSearch = () => {
+  headerSearchQuery.value = '';
+  if (headerRef.value) {
+    headerRef.value.clearSearch();
+  }
+};
+
+const applyFilter = (filter) => {
+  currentFilter.value = filter;
+  isFilterOpen.value = false;
+};
+
+const clearFilter = () => {
+  currentFilter.value = 'all';
+};
+
+const getFilterLabel = (filterValue) => {
+  const option = filterOptions.find(option => option.value === filterValue);
+  return option ? option.label : filterValue;
+};
+
+const applySort = (sort) => {
+  // If clicking the same sort option, toggle direction
+  if (currentSort.value.value === sort.value) {
+    currentSort.value = {
+      ...sort,
+      direction: currentSort.value.direction === 'asc' ? 'desc' : 'asc',
+      label: sort.label + (currentSort.value.direction === 'asc' ? ' (Oldest First)' : ' (Newest First)')
+    };
+  } else {
+    // New sort option
+    currentSort.value = {
+      ...sort,
+      direction: 'desc',
+      label: sort.label + (sort.value === 'total_amount' ? ' (Highest First)' : ' (Newest First)')
+    };
+  }
+  isSortOpen.value = false;
+};
 
 onMounted(() => {
   const page = usePage().props;
@@ -263,6 +496,12 @@ onMounted(() => {
       }
     }
   }
+
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
 });
 
 const openActionMenu = (order, event) => {
@@ -306,7 +545,7 @@ const confirmAccept = () => {
       if (toast.value) {
         toast.value.addToast('Order approved successfully', 'success');
       }
-      
+
     },
     onError: (errors) => {
       showAcceptModal.value = false;
@@ -348,6 +587,18 @@ const closeModal = () => {
   activeActionMenu.value = null;
 };
 
+const handleClickOutside = (event) => {
+  if (!event.target.closest('button') || !event.target.closest('button').contains(ChevronDownIcon)) {
+    isFilterOpen.value = false;
+    isSortOpen.value = false;
+  }
+
+  // Close the action menu if it's open and the user clicks outside
+  if (activeActionMenu.value && !event.target.closest('.action-menu-trigger')) {
+    closeActionMenu();
+  }
+};
+
 const makeLabel = (label) => {
   if (label.includes("Previous")) return "<";
   if (label.includes("Next")) return ">";
@@ -358,3 +609,33 @@ const clearError = () => {
   errorMessage.value = null;
 };
 </script>
+
+<style scoped>
+.bg-navy-600 {
+  background-color: #001044;
+}
+
+.bg-navy-700 {
+  background-color: #151c63;
+}
+
+.bg-navy-900 {
+  background-color: #0a0f2d;
+}
+
+.hover\:bg-navy-700:hover {
+  background-color: #151c63;
+}
+
+.bg-navy-100 {
+  background-color: #E6E6FF;
+}
+
+.text-navy-800 {
+  color: #001044;
+}
+
+.text-navy-500 {
+  color: #3A3F9E;
+}
+</style>

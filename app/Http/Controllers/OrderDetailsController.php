@@ -30,6 +30,17 @@ class OrderDetailsController extends Controller
             'reference_number' => $order->reference_number,
             'status' => $order->order_status,
             'order_date' => $order->created_at->format('Y-m-d'),
+            'shipping_address' => $order->shipping_address,
+            'shipping_address_details' => $order->shippingAddress ? [
+                'id' => $order->shippingAddress->id,
+                'first_name' => $order->shippingAddress->first_name,
+                'last_name' => $order->shippingAddress->last_name,
+                'phone_number' => $order->shippingAddress->phone_number,
+                'complete_address' => $order->shippingAddress->complete_address,
+                'city' => $order->shippingAddress->city,
+                'province' => $order->shippingAddress->province,
+                'zip_code' => $order->shippingAddress->zip_code,
+            ] : null,
             'payment_method' => $order->payment_method,
             'e_invoice' => [
                 'number' => $order->e_invoice,

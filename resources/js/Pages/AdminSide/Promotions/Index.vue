@@ -1,10 +1,11 @@
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { Link, router } from "@inertiajs/vue3";
 import {
   MoreVerticalIcon,
   ChevronDownIcon,
   TrashIcon,
+  XIcon,
 } from "lucide-vue-next";
 import Sidebar from "../../../Components/Sidebar.vue";
 import Header from "../../../Components/Header.vue";
@@ -16,19 +17,105 @@ const props = defineProps({
 
 const headers = ["NAME", "CODE", "TYPE", "DISCOUNT", "DESCRIPTION", ""];
 const isFilterOpen = ref(false);
+const isSortOpen = ref(false);
 const showDeleteModal = ref(false);
 const promotionToDelete = ref(null);
 const activeActionMenu = ref(null);
-const currentFilter = ref('All');
+const currentFilter = ref('all');
 
-const filteredPromotions = computed(() => {
-  if (currentFilter.value === 'All') return props.promotions;
-  return props.promotions.filter(promo => promo.type === currentFilter.value.toLowerCase());
+// Filter options
+const filterOptions = [
+  { label: 'All Promotions', value: 'all' },
+  { label: 'Item Discounts', value: 'item' },
+  { label: 'Shipping Discounts', value: 'shipping' },
+  { label: 'High Discount (>30%)', value: 'high_discount' },
+  { label: 'Medium Discount (10-30%)', value: 'medium_discount' },
+  { label: 'Low Discount (<10%)', value: 'low_discount' },
+];
+
+// Sort options
+const currentSort = ref({
+  value: 'name',
+  direction: 'asc',
+  label: 'Name (A-Z)'
 });
 
-const filterByType = (type) => {
-  currentFilter.value = type;
+const sortOptions = [
+  { value: 'name', label: 'Name' },
+  { value: 'discount', label: 'Discount %' },
+  { value: 'code', label: 'Promo Code' },
+];
+
+const filteredAndSortedPromotions = computed(() => {
+  let result = [...props.promotions];
+
+  // Apply filters
+  if (currentFilter.value !== 'all') {
+    switch (currentFilter.value) {
+      case 'item':
+      case 'shipping':
+        result = result.filter(promo => promo.type === currentFilter.value);
+        break;
+      case 'high_discount':
+        result = result.filter(promo => promo.discount > 30);
+        break;
+      case 'medium_discount':
+        result = result.filter(promo => promo.discount >= 10 && promo.discount <= 30);
+        break;
+      case 'low_discount':
+        result = result.filter(promo => promo.discount < 10);
+        break;
+    }
+  }
+
+  // Apply sorting
+  result.sort((a, b) => {
+    let comparison = 0;
+
+    switch (currentSort.value.value) {
+      case 'name':
+        comparison = a.name.localeCompare(b.name);
+        break;
+      case 'discount':
+        comparison = a.discount - b.discount;
+        break;
+      case 'code':
+        comparison = a.code.localeCompare(b.code);
+        break;
+    }
+
+    return currentSort.value.direction === 'asc' ? comparison : -comparison;
+  });
+
+  return result;
+});
+
+const applyFilter = (filter) => {
+  currentFilter.value = filter;
   isFilterOpen.value = false;
+};
+
+const clearFilter = () => {
+  currentFilter.value = 'all';
+};
+
+const applySort = (sort) => {
+  // If clicking the same sort option, toggle direction
+  if (currentSort.value.value === sort.value) {
+    currentSort.value = {
+      ...sort,
+      direction: currentSort.value.direction === 'asc' ? 'desc' : 'asc',
+      label: sort.label + (currentSort.value.direction === 'asc' ? ' (High-Low)' : ' (Low-High)')
+    };
+  } else {
+    // New sort option
+    currentSort.value = {
+      ...sort,
+      direction: 'asc',
+      label: sort.label
+    };
+  }
+  isSortOpen.value = false;
 };
 
 const openActionMenu = (index) => {
@@ -49,6 +136,21 @@ const confirmDelete = () => {
     },
   });
 };
+
+const handleClickOutside = (event) => {
+  if (!event.target.closest('button') || !event.target.closest('button').contains(ChevronDownIcon)) {
+    isFilterOpen.value = false;
+    isSortOpen.value = false;
+  }
+};
+
+onMounted(() => {
+  document.addEventListener('click', handleClickOutside);
+});
+
+onUnmounted(() => {
+  document.removeEventListener('click', handleClickOutside);
+});
 </script>
 
 <template>
@@ -66,30 +168,71 @@ const confirmDelete = () => {
       <!-- Promotions Content -->
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div class="flex justify-between items-center mb-6">
-          <div class="relative">
-            <button
-              @click="isFilterOpen = !isFilterOpen"
-              class="flex items-center px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
-            >
-              Filter by
-              <ChevronDownIcon class="ml-2 h-5 w-5" />
-            </button>
+          <div class="flex space-x-4">
             <!-- Filter Dropdown -->
-            <div
-              v-if="isFilterOpen"
-              class="absolute mt-2 w-48 bg-white rounded-md shadow-lg z-10"
-            >
+            <div class="relative">
               <button
-                v-for="type in ['All', 'Item', 'Shipping']"
-                :key="type"
-                @click="filterByType(type)"
-                class="block w-full text-left px-4 py-2 hover:bg-gray-100"
-                :class="{ 'bg-gray-100': currentFilter === type }"
+                @click="isFilterOpen = !isFilterOpen"
+                class="flex items-center px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
               >
-                {{ type }}
+                Filter by {{ currentFilter !== 'all' ? ': ' + currentFilter : '' }}
+                <ChevronDownIcon class="ml-2 h-5 w-5" />
               </button>
+              <div
+                v-if="isFilterOpen"
+                class="absolute mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1"
+              >
+                <button
+                  v-for="filter in filterOptions"
+                  :key="filter.value"
+                  @click="applyFilter(filter.value)"
+                  class="block w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+                  :class="{'bg-gray-100': currentFilter === filter.value}"
+                >
+                  {{ filter.label }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Sort Dropdown -->
+            <div class="relative">
+              <button
+                @click="isSortOpen = !isSortOpen"
+                class="flex items-center px-4 py-2 border rounded-md bg-white hover:bg-gray-50"
+              >
+                Sort by: {{ currentSort.label }}
+                <ChevronDownIcon class="ml-2 h-5 w-5" />
+              </button>
+              <div
+                v-if="isSortOpen"
+                class="absolute mt-2 w-48 bg-white rounded-md shadow-lg z-10 py-1"
+              >
+                <button
+                  v-for="sort in sortOptions"
+                  :key="sort.value"
+                  @click="applySort(sort)"
+                  class="block w-full px-4 py-2 text-sm text-left hover:bg-gray-100"
+                  :class="{'bg-gray-100': currentSort.value === sort.value}"
+                >
+                  {{ sort.label }}
+                  <span v-if="currentSort.value === sort.value" class="float-right">
+                    {{ currentSort.direction === 'asc' ? '↑' : '↓' }}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Active Filter Tags -->
+            <div v-if="currentFilter !== 'all'" class="flex items-center">
+              <span class="px-2 py-1 bg-navy-100 text-navy-800 text-sm rounded-md flex items-center">
+                {{ currentFilter }}
+                <button @click="clearFilter" class="ml-1 text-navy-500 hover:text-navy-700">
+                  <XIcon class="h-4 w-4" />
+                </button>
+              </span>
             </div>
           </div>
+
           <button class="px-4 py-2 bg-navy-600 text-white rounded-md hover:bg-navy-700">
             <Link :href="route('promotions.create')"> New Promotion </Link>
           </button>
@@ -110,11 +253,31 @@ const confirmDelete = () => {
               </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
-              <tr v-for="(promotion, index) in filteredPromotions" :key="promotion.id">
+              <tr v-for="(promotion, index) in filteredAndSortedPromotions" :key="promotion.id">
                 <td class="px-6 py-4 whitespace-nowrap">{{ promotion.name }}</td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ promotion.code }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ promotion.type }}</td>
-                <td class="px-6 py-4 whitespace-nowrap">{{ promotion.discount }}%</td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span :class="[
+                    'px-2 py-1 text-xs rounded-full',
+                    promotion.type === 'item'
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-green-100 text-green-800'
+                  ]">
+                    {{ promotion.type }}
+                  </span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
+                  <span :class="[
+                    'font-medium',
+                    promotion.discount > 30
+                      ? 'text-red-600'
+                      : promotion.discount > 10
+                        ? 'text-orange-500'
+                        : 'text-green-600'
+                  ]">
+                    {{ promotion.discount }}%
+                  </span>
+                </td>
                 <td class="px-6 py-4 whitespace-nowrap">{{ promotion.description }}</td>
                 <td class="px-6 py-4 whitespace-nowrap text-right relative">
                   <button
@@ -144,6 +307,11 @@ const confirmDelete = () => {
                       Delete
                     </button>
                   </div>
+                </td>
+              </tr>
+              <tr v-if="filteredAndSortedPromotions.length === 0">
+                <td colspan="6" class="px-6 py-4 text-center text-gray-500">
+                  No promotions found matching your criteria
                 </td>
               </tr>
             </tbody>
@@ -197,5 +365,17 @@ const confirmDelete = () => {
 
 .hover\:bg-navy-700:hover {
   background-color: #151c63;
+}
+
+.bg-navy-100 {
+  background-color: #E6E6FF;
+}
+
+.text-navy-800 {
+  color: #001044;
+}
+
+.text-navy-500 {
+  color: #3A3F9E;
 }
 </style>
