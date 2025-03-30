@@ -16,6 +16,7 @@ class Orders extends Model
         'total_amount',
         'payment_status',
         'payment_method',
+        'payment_reference_number',
         'shipping_method',
         'tracking_number',
         'estimated_delivery',

@@ -184,45 +184,47 @@
                 {{ product.name }}
               </h3>
 
-              <div class="flex items-center justify-between">
-                <!-- Product Details -->
-                <div>
-                  <div class="flex items-center mb-1">
-                    <Star
-                      v-for="n in 5"
-                      :key="n"
-                      class="h-3 w-3 sm:h-4 sm:w-4"
-                      :class="
-                        n <= product.rating
-                          ? 'text-yellow-400 fill-current'
-                          : 'text-gray-400'
-                      "
-                    />
-                    <span class="text-gray-400 text-xs sm:text-sm ml-1 sm:ml-2"
-                      >({{ product.stock }})</span
-                    >
-                  </div>
-                  <span class="primary-text font-bold text-base sm:text-lg"
-                    >₱{{ product.price }}</span
-                  >
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex space-x-1 sm:space-x-2 mt-2 sm:mt-5">
-                  <WishlistButton
-                    :product-id="product.id"
-                    :initial-wishlist-state="product.in_wishlist"
-                    size="small"
-                    icon-class="h-4 w-4 sm:h-5 sm:w-5"
-                    button-class="p-1.5 sm:p-1.5 primary-text main rounded-lg"
+              <div class="flex justify-between">
+                <div class="flex items-center mb-1">
+                  <ProductRating
+                    :model-value="product.rating"
+                    :count="product.rating_count"
+                    read-only
+                    size="sm"
                   />
-                  <button
-                    @click.prevent="addToCart(product)"
-                    class="p-1.5 sm:p-1.5 button-primary rounded-lg"
+                  <span class="text-gray-400 text-xs sm:text-sm ml-1 sm:ml-2"
+                    >({{ product.stock }})</span
                   >
-                    <ShoppingCart class="h-4 w-4 sm:h-5 sm:w-5" />
-                  </button>
                 </div>
+                <span class="primary-text font-bold text-base sm:text-lg"
+                  >₱{{ product.price }}</span
+                >
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex space-x-1 sm:space-x-2 mt-2 sm:mt-5">
+                <WishlistButton
+                  :product-id="product.id"
+                  :initial-wishlist-state="product.in_wishlist"
+                  size="small"
+                  icon-class="h-4 w-4 sm:h-5 sm:w-5"
+                  button-class="p-1.5 sm:p-1.5 primary-text main rounded-lg"
+                />
+                <button
+                  @click.prevent="addToCart(product)"
+                  class="p-1.5 sm:p-1.5 button-primary rounded-lg"
+                >
+                  <ShoppingCart class="h-4 w-4 sm:h-5 sm:w-5" />
+                </button>
+                <BuyNowButton
+                  :product-id="product.id"
+                  :product-price="product.price"
+                  size="sm"
+                  button-class="p-1.5 sm:p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                  icon-class="h-4 w-4 sm:h-5 sm:w-5"
+                  :show-icon="true"
+                  label=""
+                />
               </div>
             </Link>
           </div>
@@ -301,6 +303,8 @@ import { usePage } from "@inertiajs/vue3";
 import debounce from "lodash/debounce";
 import AddToCartModal from "../../Components/AddToCartModal.vue";
 import WishlistButton from "../../Components/WishlistButton.vue";
+import ProductRating from "../../Components/ProductRating.vue";
+import BuyNowButton from "../../Components/BuyNowButton.vue";
 
 const props = defineProps({
   products: Object,

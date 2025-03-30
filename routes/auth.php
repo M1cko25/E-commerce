@@ -16,6 +16,7 @@ use App\Http\Controllers\Client\ClientProfileController;
 use App\Http\Controllers\PromotionController;
 use App\Http\Controllers\HomeContentController;
 use App\Http\Controllers\ReturnController;
+use App\Http\Controllers\QRController;
 
 Route::middleware('auth')->group(function () {
     Route::get('admin/dashboard', [DashboardController::class, 'index'])
@@ -70,6 +71,13 @@ Route::middleware('auth')->group(function () {
     Route::get('admin/returns/{id}', [ReturnController::class, 'show'])
         ->name('returns.show');
 
+    // QR Code routes
+    Route::get('admin/qr-codes', [QRController::class, 'index'])
+        ->name('qr-codes.index');
+    Route::post('admin/qr-codes', [QRController::class, 'store'])
+        ->name('qr-codes.store');
+    Route::delete('admin/qr-codes/{id}', [QRController::class, 'destroy'])
+        ->name('qr-codes.destroy');
 });
 
 Route::middleware(['guest'])->group(function () {

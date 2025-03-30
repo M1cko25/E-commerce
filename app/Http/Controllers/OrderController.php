@@ -30,6 +30,7 @@ class OrderController extends Controller
                     'reference_number' => $orders->reference_number,
                     'payment_method' => $orders->payment_method,
                     'payment_status' => $orders->payment_status,
+                    'payment_reference_number' => $orders->payment_reference_number,
                     'items' => $orders->items->map(function ($item) {
                         return [
                             'product_name' => $item->product->name ?? 'Unknown Product',
@@ -68,6 +69,7 @@ class OrderController extends Controller
                 'reference_number' => $order->reference_number,
                 'payment_method' => $order->payment_method,
                 'payment_status' => $order->payment_status,
+                'payment_reference_number' => $order->payment_reference_number,
                 'items' => $order->items->map(function ($item) {
                     return [
                         'product_name' => $item->product->name ?? 'Unknown Product',

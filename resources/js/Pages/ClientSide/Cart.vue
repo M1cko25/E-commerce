@@ -347,7 +347,7 @@ const shippingFee = computed(() => {
 });
 
 const total = computed(() => {
-  return subtotal.value + shippingFee.value;
+  return subtotal.value;
 });
 
 // Methods

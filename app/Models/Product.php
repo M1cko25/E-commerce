@@ -19,11 +19,15 @@ class Product extends Model
         'description',
         'product_images',
         'price',
+        'rating',
+        'rating_count',
         'stock',
     ];
 
     protected $casts = [
         'product_images' => 'array',
+        'rating' => 'float',
+        'rating_count' => 'integer',
     ];
 
     public function variants() {
@@ -92,5 +96,13 @@ class Product extends Model
     public function wishlistItems()
     {
         return $this->hasMany(WishlistItem::class);
+    }
+
+    /**
+     * Get the ratings for this product
+     */
+    public function ratings()
+    {
+        return $this->hasMany(ProductRating::class);
     }
 }

@@ -13,6 +13,7 @@ import {
   MenuIcon,
   XIcon,
   PackageIcon,
+  QrCode,
 } from "lucide-vue-next";
 import Logo from "@/Pages/ClientSide/assets/DRMLogo.png";
 
@@ -34,6 +35,7 @@ const menuItems = computed(() =>
     { name: "Customers", icon: UsersIcon, href: route("customers") },
     { name: "Employees", icon: UsersIcon, href: route("employees.index") },
     { name: "Returns", icon: ListX, href: route('returns.index') },
+    { name: "QR Codes", icon: QrCode, href: route('qr-codes.index') },
   ].map((item) => ({
     ...item,
     current: currentPath.value.startsWith(item.href),

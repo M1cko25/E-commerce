@@ -20,6 +20,7 @@ use App\Http\Controllers\Client\ComponentSelectionController;
 use App\Http\Controllers\CustomerReturnController;
 use App\Http\Controllers\CustomerAddressController;
 use App\Http\Controllers\WishlistController;
+use App\Http\Controllers\ProductRatingController;
 
 Route::middleware(['auth:customer'])->group(function () {
     Route::post('/customer/logout', [ClientRegisterController::class, 'destroy'])->name('customer.logout');
@@ -77,10 +78,22 @@ Route::middleware(['auth:customer'])->group(function () {
         Route::post('/customer/wishlist/toggle', [WishlistController::class, 'toggle'])
             ->name('customer.wishlist.toggle');
 
+        // Product Rating Routes
+        Route::post('/product/rate', [ProductRatingController::class, 'store'])
+            ->name('product.rate');
+        Route::get('/product/{productId}/ratings', [ProductRatingController::class, 'getProductRatings'])
+            ->name('product.ratings');
+
         Route::get('payment', [CheckoutController::class, 'pay'])
             ->name('customer.payment');
         Route::post('process-cod', [CheckoutController::class, 'processCod'])
             ->name('customer.processCod');
+
+        // Add QR Payment routes
+        Route::get('/customer/qr-payment', [CheckoutController::class, 'showQrPayment'])
+            ->name('customer.qrPayment');
+        Route::post('/customer/payment/confirm', [CheckoutController::class, 'confirmPayment'])
+            ->name('customer.payment.confirm');
 
         Route::get('/customer/orders/{reference_number}', [OrderDetailsController::class, 'show'])
             ->name('customer.orderDetails');

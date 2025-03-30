@@ -77,19 +77,21 @@
         <div class="space-y-6">
           <h1 class="text-3xl font-bold text-gray-900">{{ product.name }}</h1>
 
-          <!-- Rating -->
-          <div class="flex items-center space-x-2">
-            <div class="flex">
-              <StarIcon
-                v-for="i in 5"
-                :key="i"
-                :class="i <= product.rating ? 'text-yellow-400' : 'text-gray-300'"
-                class="h-5 w-5"
+          <!-- Main Product Section - Rating Area -->
+          <div class="space-y-4">
+
+            <!-- Add a rating functionality for logged in customers -->
+            <div v-if="$page.props.auth.customer" class="mt-4">
+              <div class="text-sm text-gray-600 mb-2">Rate this product:</div>
+              <div class="flex items-center">
+                <ProductRating
+                  v-model="userRating"
+                  @rate="rateProduct"
+
+                  size="md"
               />
             </div>
-            <span class="text-sm text-gray-600"
-              >{{ product.reviewCount }} customer reviews</span
-            >
+            </div>
           </div>
 
           <!-- Description and Quick Specs -->
@@ -147,100 +149,16 @@
             </div>
           </div>
 
-          <!-- Price and Add to Cart -->
-          <div class="space-y-4">
-            <!-- Product Price -->
-            <div class="flex justify-between items-center mb-6">
-              <div class="text-3xl font-bold text-gray-900">₱{{ currentPrice }}</div>
-              <WishlistButton
-                :product-id="product.id"
-                :initial-wishlist-state="product.in_wishlist"
-                size="large"
-                icon-class="w-6 h-6"
-              />
-            </div>
-
-            <!-- Size Selection (only show if has variants) -->
-            <div v-if="hasVariants && availableSizes.length > 0" class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Size</label>
-              <div class="flex flex-wrap gap-2">
+          <!-- Main Product Section - Action Buttons -->
+          <div class="flex flex-wrap gap-3 mt-6">
                 <button
-                  v-for="size in availableSizes"
-                  :key="size"
-                  @click="selectSize(size)"
-                  :class="[
-                    'px-4 py-2 border rounded-md text-sm font-medium',
-                    selectedSize === size
-                      ? 'bg-navy-600 text-white border-navy-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  ]"
-                >
-                  {{ size }}
+              @click="addToCart"
+              class="flex-1 flex items-center justify-center bg-navy-600 hover:bg-navy-700 text-white py-3 px-6 rounded-lg transition-colors"
+              :disabled="!isInStock"
+            >
+              <ShoppingCartIcon class="w-5 h-5 mr-2" />
+              Add to Cart
                 </button>
-              </div>
-            </div>
-
-            <!-- Kind Selection (only show if has variants with kinds) -->
-            <div v-if="hasVariants && availableKinds.length > 0" class="space-y-2">
-              <label class="block text-sm font-medium text-gray-700">Type</label>
-              <div class="flex flex-wrap gap-2">
-                <button
-                  v-for="kind in availableKinds"
-                  :key="kind"
-                  @click="selectKind(kind)"
-                  :class="[
-                    'px-4 py-2 border rounded-md text-sm font-medium',
-                    selectedKind === kind
-                      ? 'bg-navy-600 text-white border-navy-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50'
-                  ]"
-                >
-                  {{ kind }}
-                </button>
-              </div>
-            </div>
-
-            <!-- Quantity -->
-            <div class="flex items-center space-x-4 mb-6">
-              <div class="flex items-center border rounded-lg bg-white shadow-sm">
-                <button
-                  @click="quantity > 1 && quantity--"
-                  class="px-4 py-2 text-gray-600 hover:text-navy-600 transition-colors"
-                >
-                  -
-                </button>
-                <input
-                  type="number"
-                  v-model="quantity"
-                  class="w-16 text-center border-x py-2 focus:outline-none focus:ring-1 focus:ring-navy-500"
-                />
-                <button
-                  @click="quantity++"
-                  class="px-4 py-2 text-gray-600 hover:text-navy-600 transition-colors"
-                >
-                  +
-                </button>
-              </div>
-            </div>
-
-            <!-- Action Buttons -->
-            <div class="flex gap-2">
-              <!-- Wishlist Button -->
-              <button
-                class="flex-none w-20 h-12 flex items-center justify-center rounded-lg border border-gray-300 hover:bg-gray-200 transition-colors"
-              >
-                <HeartIcon class="h-5 w-5 text-gray-600 hover:text-red-500" />
-              </button>
-
-              <!-- Add to Cart Button -->
-              <button
-                @click="addToCart"
-                class="flex-1 text-white h-12 rounded-lg hover:bg-navy-700 transition-colors duration-200 flex items-center justify-center space-x-2 button-primary"
-              >
-                <ShoppingCartIcon class="h-5 w-5" />
-                <span>ADD TO CART</span>
-              </button>
-            </div>
           </div>
         </div>
       </div>
@@ -431,19 +349,12 @@
                   <!-- Product Details -->
                   <div>
                     <div class="flex items-center mb-1">
-                      <StarIcon
-                        v-for="n in 5"
-                        :key="n"
-                        class="h-3 w-3 sm:h-4 sm:w-4"
-                        :class="
-                          n <= product.rating
-                            ? 'text-yellow-400 fill-current'
-                            : 'text-gray-400'
-                        "
+                      <ProductRating
+                        :model-value="product.rating || 0"
+                        :count="product.reviewCount || 0"
+                        read-only
+                        size="sm"
                       />
-                      <span class="text-gray-400 text-xs sm:text-sm ml-1 sm:ml-2">
-                        ({{ product.reviewCount }})
-                      </span>
                     </div>
                     <span class="primary-color font-bold text-sm sm:text-base lg:text-lg">
                       ₱{{ product.price }}
@@ -451,19 +362,28 @@
                   </div>
 
                   <!-- Action Buttons -->
-                  <div class="flex space-x-1 sm:space-x-2">
-                    <button
-                      @click.prevent="toggleWishlist(product.id)"
-                      class="p-1.5 sm:p-1.5 primary-color bg-[#e2e8f0] rounded-lg"
-                    >
-                      <HeartIcon class="h-4 w-4 sm:h-5 sm:w-5 hover:text-red-500" />
-                    </button>
+                  <div class="flex space-x-1 mt-2">
+                    <WishlistButton
+                      :product-id="product.id"
+                      :initial-wishlist-state="product.in_wishlist"
+                      size="small"
+                      icon-class="h-4 w-4"
+                      button-class="p-1.5 primary-text main rounded-lg"
+                    />
                     <button
                       @click.prevent="addSimilarToCart(product)"
-                      class="p-1.5 sm:p-1.5 button-primary rounded-lg"
+                      class="p-1.5 button-primary rounded-lg"
                     >
-                      <ShoppingCartIcon class="h-4 w-4 sm:h-5 sm:w-5" />
+                      <ShoppingCartIcon class="h-4 w-4" />
                     </button>
+                    <BuyNowButton
+                      :product-id="product.id"
+                      size="sm"
+                      button-class="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                      icon-class="h-4 w-4"
+                      :show-icon="true"
+                      label=""
+                    />
                   </div>
                 </div>
               </Link>
@@ -564,6 +484,9 @@ import NavLink from "../../Components/NavLink.vue";
 import Footer from "../../Components/Footer.vue";
 import AddToCartModal from "../../Components/AddToCartModal.vue";
 import WishlistButton from "../../Components/WishlistButton.vue";
+import ProductRating from "../../Components/ProductRating.vue";
+import BuyNowButton from "../../Components/BuyNowButton.vue";
+
 const props = defineProps({
   product: Object,
   similarProducts: Array,
@@ -853,6 +776,25 @@ const compareSelectedProducts = () => {
       product2: selectedProducts.value[1].id
     });
   }
+};
+
+// Also in script section, add these refs and methods
+const userRating = ref(0);
+const ratingSubmitted = ref(false);
+
+const rateProduct = (rating) => {
+  router.post(route("product.rate"), {
+    product_id: props.product.id,
+    rating: rating
+  }, {
+    preserveScroll: true,
+    onSuccess: () => {
+      ratingSubmitted.value = true;
+      setTimeout(() => {
+        ratingSubmitted.value = false;
+      }, 3000);
+    }
+  });
 };
 </script>
 

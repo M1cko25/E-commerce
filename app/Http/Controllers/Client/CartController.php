@@ -290,4 +290,60 @@ class CartController extends Controller
 
         return back()->with('success', 'Options updated successfully');
     }
+
+    /**
+     * Add item to cart
+     */
+    public function store(Request $request)
+    {
+        $request->validate([
+            'product_id' => 'required|exists:products,id',
+            'quantity' => 'required|integer|min:1',
+            'buy_now' => 'nullable|boolean'
+        ]);
+
+        $customer = Auth::guard('customer')->user();
+        $product = Product::findOrFail($request->product_id);
+
+        // Check product stock
+        if ($product->stock < $request->quantity) {
+            return back()->withErrors(['error' => 'Not enough stock available.']);
+        }
+
+        // Check if product is already in cart
+        $cartItem = CartItem::where('customer_id', $customer->id)
+            ->where('product_id', $request->product_id)
+            ->first();
+
+        if ($cartItem) {
+            // Update quantity
+            $cartItem->update([
+                'quantity' => $cartItem->quantity + $request->quantity,
+                'selected' => true // Select this item by default
+            ]);
+        } else {
+            // Add new item
+            $cartItem = CartItem::create([
+                'customer_id' => $customer->id,
+                'product_id' => $request->product_id,
+                'price' => $product->price,
+                'quantity' => $request->quantity,
+                'selected' => true // Select this item by default
+            ]);
+        }
+
+        // For buy now, deselect all other cart items
+        if ($request->buy_now) {
+            CartItem::where('customer_id', $customer->id)
+                ->where('id', '!=', $cartItem->id)
+                ->update(['selected' => false]);
+
+            return response()->json([
+                'message' => 'Product added to cart',
+                'redirect' => route('customer.checkout')
+            ]);
+        }
+
+        return back()->with('success', 'Product added to cart.');
+    }
 }

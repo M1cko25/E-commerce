@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use App\Models\Product;
+use App\Http\Controllers\QRController;
 
 class CheckoutController extends Controller
 {
@@ -25,7 +26,7 @@ class CheckoutController extends Controller
             ->exists();
 
         if (!$hasItems) {
-            return redirect()->route('cart')->with('error', 'Your cart is empty. Please add items before proceeding to checkout.');
+            return redirect()->route('cart.index')->with('error', 'Your cart is empty. Please add items before proceeding to checkout.');
         }
 
         // Get authenticated customer
@@ -120,34 +121,53 @@ class CheckoutController extends Controller
         $shipping = request('delivery_method') === 'pickup' ? 0 : 145;
         $total = $subtotal + $shipping;
 
-        // Create Paymongo source
-        $data = [
-            'data' => [
-                'attributes' => [
-                    'amount' => $total * 100, // Convert to cents
-                    'currency' => 'PHP',
-                    'type' => 'gcash',
-                    'redirect' => [
-                        'success' => route('customer.payment.success'),
-                        'failed' => route('customer.checkout'),
-                    ],
-                    'billing' => [
-                        'name' => $customer->first_name . ' ' . $customer->last_name,
-                        'email' => $customer->email,
-                        'phone' => $customer->phone,
-                        'address' => [
-                            'line1' => $address->complete_address,
-                            'city' => $address->city,
-                            'state' => $address->state,
-                            'postal_code' => $address->zip_code,
-                            'country' => 'PH'
+        // Store payment data in session
+        Session::put('payment_data', [
+            'selected_items' => $selectedItems,
+            'subtotal' => $subtotal,
+            'shipping' => $shipping,
+            'total' => $total,
+            'payment_method' => 'gcash',
+            'customer' => $customer,
+            'notes' => $request->input('notes'),  // Get notes from request
+            'shipping_address' => $request->input('shipping_address'),  // Get shipping address from request
+            'address_id' => $request->address_id,
+        ]);
+
+        // If using QR payment method, redirect to the QR payment page
+        if ($request->input('payment_option') === 'qr_code') {
+            return redirect()->route('customer.qrPayment');
+        }
+
+        // Continue with original GCash payment flow (Paymongo)
+        try {
+            // Create Paymongo source
+            $data = [
+                'data' => [
+                    'attributes' => [
+                        'amount' => $total * 100, // Convert to cents
+                        'currency' => 'PHP',
+                        'type' => 'gcash',
+                        'redirect' => [
+                            'success' => route('customer.payment.success'),
+                            'failed' => route('customer.checkout'),
+                        ],
+                        'billing' => [
+                            'name' => $customer->first_name . ' ' . $customer->last_name,
+                            'email' => $customer->email,
+                            'phone' => $customer->phone,
+                            'address' => [
+                                'line1' => $address->complete_address,
+                                'city' => $address->city,
+                                'state' => $address->state,
+                                'postal_code' => $address->zip_code,
+                                'country' => 'PH'
+                            ]
                         ]
                     ]
                 ]
-            ]
-        ];
+            ];
 
-        try {
             $response = Curl::to('https://api.paymongo.com/v1/sources')
                 ->withHeader('Content-Type: application/json')
                 ->withHeader('Accept: application/json')
@@ -160,23 +180,13 @@ class CheckoutController extends Controller
                 throw new \Exception('Failed to create payment source');
             }
 
-            // Store payment data in session with the notes and shipping address from request
-            Session::put('payment_data', [
-                'response_id' => $response->data->id,
-                'selected_items' => $selectedItems,
-                'subtotal' => $subtotal,
-                'shipping' => $shipping,
-                'total' => $total,
-                'payment_method' => 'gcash',
-                'customer' => $customer,
-                'notes' => $request->input('notes'),  // Get notes from request
-                'shipping_address' => $request->input('shipping_address'),  // Get shipping address from request
-                'address_id' => $request->address_id,
-            ]);
+            // Update session with the response ID
+            $paymentData = Session::get('payment_data');
+            $paymentData['response_id'] = $response->data->id;
+            Session::put('payment_data', $paymentData);
 
             // Return the checkout URL in an Inertia response
             return Inertia::location($response->data->attributes->redirect->checkout_url);
-
         } catch (\Exception $e) {
             return back()->withErrors(['error' => 'Payment initialization failed. Please try again.']);
         }
@@ -325,5 +335,92 @@ class CheckoutController extends Controller
             DB::rollBack();
             return back()->withErrors(['error' => 'Failed to process your order. Please try again. ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Process GCash payment and display the QR code.
+     */
+    public function showQrPayment(Request $request)
+    {
+        // Get authenticated customer
+        $customer = Auth::guard('customer')->user();
+
+        // Get order information from session or create new order
+        if (!Session::has('payment_data')) {
+            return redirect()->route('customer.checkout')->withErrors(['error' => 'Payment session expired. Please try again.']);
+        }
+
+        $paymentData = Session::get('payment_data');
+
+        // Get a random QR code from the database
+        $qrCode = app(QRController::class)->getRandomQrCode();
+
+        // Create temporary order or get from session
+        if (!isset($paymentData['order_id'])) {
+            // Create temporary order in pending state
+            $order = Orders::create([
+                'reference_number' => 'ORD-' . uniqid(),
+                'customer_id' => $customer->id,
+                'total_amount' => $paymentData['total'],
+                'payment_method' => 'gcash',
+                'shipping_method' => 'delivery',
+                'shipping_amount' => $paymentData['shipping'],
+                'payment_status' => 'pending',
+                'notes' => $paymentData['notes'] ?? null,
+                'shipping_address' => $paymentData['shipping_address'],
+                'shipping_address_id' => $paymentData['address_id'] ?? null,
+            ]);
+
+            // Create order items
+            foreach ($paymentData['selected_items'] as $item) {
+                OrderItems::create([
+                    'order_id' => $order->id,
+                    'product_id' => $item['id'],
+                    'quantity' => $item['quantity'],
+                    'unit_amount' => $item['price'],
+                    'total_amount' => $item['subtotal']
+                ]);
+            }
+
+            // Store order ID in session
+            $paymentData['order_id'] = $order->id;
+            Session::put('payment_data', $paymentData);
+        } else {
+            // Get existing order
+            $order = Orders::findOrFail($paymentData['order_id']);
+        }
+
+        return Inertia::render('ClientSide/Customer/Pay', [
+            'order' => $order,
+            'qrCode' => $qrCode,
+        ]);
+    }
+
+    /**
+     * Confirm payment with reference number.
+     */
+    public function confirmPayment(Request $request)
+    {
+        $request->validate([
+            'order_id' => 'required|exists:orders,id',
+            'payment_ref' => 'required|string|size:4|regex:/^\d+$/',
+        ]);
+
+        $order = Orders::findOrFail($request->order_id);
+
+        // Update order with payment reference and mark as paid
+        $order->payment_reference_number = $request->payment_ref;
+        $order->payment_status = 'paid';
+        $order->save();
+
+        // Clear selected cart items
+        CartItem::where('customer_id', Auth::guard('customer')->id())
+            ->where('selected', true)
+            ->delete();
+
+        // Clear payment session
+        Session::forget('payment_data');
+
+        return redirect()->route('customer.myOrders')->with('success', 'Payment successful! Your order has been placed.');
     }
 }

@@ -10,7 +10,7 @@
           href="/cart"
           class="flex items-center text-sm text-navy-600 hover:text-navy-700"
         >
-          <ChevronLeftIcon class="h-4 w-4 mr-1" />
+          <ChevronLeft class="h-4 w-4 mr-1" />
           BACK TO CART
         </Link>
       </div>
@@ -23,7 +23,7 @@
             <div class="flex justify-between items-start mb-4">
               <!-- Left Section -->
               <div class="flex items-start space-x-2">
-                <MapPinIcon class="h-5 w-5 text-gray-500 mt-0.5" />
+                <MapPin class="h-5 w-5 text-gray-500 mt-0.5" />
                 <div>
                   <h2 class="font-semibold text-gray-900">Delivery Information</h2>
                   <div class="mt-2 text-sm text-gray-600">
@@ -65,7 +65,7 @@
           <!-- Delivery Method -->
           <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex items-start space-x-2 mb-4">
-              <TruckIcon class="h-5 w-5 text-gray-500 mt-0.5" />
+              <Truck class="h-5 w-5 text-gray-500 mt-0.5" />
               <h2 class="font-semibold text-gray-900">Delivery Method</h2>
             </div>
 
@@ -102,7 +102,7 @@
                       v-model="pickupDate"
                       class="w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500"
                     />
-                    <CalendarIcon
+                    <Calendar
                       class="absolute right-3 top-2.5 h-5 w-5 text-gray-400"
                     />
                   </div>
@@ -118,7 +118,7 @@
                       v-model="pickupTime"
                       class="w-full pl-3 pr-10 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-navy-500"
                     />
-                    <ClockIcon class="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
+                    <Clock class="absolute right-3 top-2.5 h-5 w-5 text-gray-400" />
                   </div>
                 </div>
               </div>
@@ -128,7 +128,7 @@
           <!-- Payment Method -->
           <div class="bg-white rounded-lg shadow-sm p-6">
             <div class="flex items-start space-x-2 mb-4">
-              <CreditCardIcon class="h-5 w-5 text-gray-500 mt-0.5" />
+              <CreditCard class="h-5 w-5 text-gray-500 mt-0.5" />
               <h2 class="font-semibold text-gray-900">Payment Method</h2>
             </div>
 
@@ -432,7 +432,7 @@
                     </div>
                   </div>
                   <div v-else class="text-center py-8">
-                    <MapPinIcon class="h-12 w-12 mx-auto text-gray-300 mb-3" />
+                    <MapPin class="h-12 w-12 mx-auto text-gray-300 mb-3" />
                     <h3 class="text-lg font-medium text-gray-900">No addresses found</h3>
                     <p class="text-gray-500 mt-1 mb-4">Add a new shipping address to continue.</p>
                     <Link
@@ -640,14 +640,14 @@ import {
   TransitionChild,
 } from "@headlessui/vue";
 import {
-  ShoppingCartIcon,
-  UserIcon,
-  MapPinIcon,
-  TruckIcon,
-  CreditCardIcon,
-  CalendarIcon,
-  ClockIcon,
-  ChevronLeftIcon,
+  ShoppingCart,
+  User,
+  MapPin,
+  Truck,
+  CreditCard,
+  Calendar,
+  Clock,
+  ChevronLeft,
 } from "lucide-vue-next";
 import NavLink from "../../../Components/NavLink.vue";
 
@@ -737,7 +737,7 @@ const proceedToPayment = () => {
       `${selectedAddress.value.complete_address}, ${selectedAddress.value.city}, ${selectedAddress.value.province}, ${selectedAddress.value.zip_code}` : '';
 
     // Make a GET request to our backend to create the payment source
-    router.get(route('customer.payment'), {
+    router.get(route('customer.qrPayment'), {
       notes: notes.value,  // Add notes from the form
       shipping_address: shippingAddress,  // Add formatted shipping address
       address_id: selectedAddress.value?.id // Send the selected address ID

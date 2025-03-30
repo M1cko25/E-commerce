@@ -23,6 +23,8 @@ import HydraulicHinges from "@/images/hydraulicHinges.png";
 import { usePage } from "@inertiajs/vue3";
 import { useAI } from "@/Api/ai";
 import WishlistButton from "../../Components/WishlistButton.vue";
+import ProductRating from "../../Components/ProductRating.vue";
+import BuyNowButton from "../../Components/BuyNowButton.vue";
 const page = usePage();
 const landingContents = page.props.landingContents;
 
@@ -482,19 +484,12 @@ const deleteHistoryConversation = async (event, promptId) => {
                   <!-- Product Details -->
                   <div>
                     <div class="flex items-center mb-1">
-                      <StarIcon
-                        v-for="n in 5"
-                        :key="n"
-                        class="h-3 w-3 sm:h-4 sm:w-4"
-                        :class="
-                          n <= latestProduct.rating
-                            ? 'text-yellow-400 fill-current'
-                            : 'text-gray-400'
-                        "
+                      <ProductRating
+                        :model-value="latestProduct.rating || 0"
+                        :count="latestProduct.stock"
+                        read-only
+                        size="sm"
                       />
-                      <span class="text-gray-400 text-xs sm:text-sm ml-1 sm:ml-2">
-                        ({{ latestProduct.stock }})
-                      </span>
                     </div>
                     <span class="primary-text font-bold text-sm sm:text-base lg:text-lg">
                       ₱{{ latestProduct.price }}
@@ -516,6 +511,15 @@ const deleteHistoryConversation = async (event, promptId) => {
                     >
                       <ShoppingCartIcon class="h-4 w-4 sm:h-5 sm:w-5" />
                     </button>
+                    <BuyNowButton
+                      :product-id="latestProduct.id"
+                      size="sm"
+                      :product-price="latestProduct.price"
+                      button-class="p-1.5 sm:p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                      icon-class="h-4 w-4 sm:h-5 sm:w-5"
+                      :show-icon="true"
+                      label=""
+                    />
                   </div>
                 </div>
               </div>
@@ -657,19 +661,12 @@ const deleteHistoryConversation = async (event, promptId) => {
               <!-- Product Details -->
               <div>
                 <div class="flex items-center mb-1">
-                  <StarIcon
-                    v-for="n in 5"
-                    :key="n"
-                    class="h-3 w-3 sm:h-4 sm:w-4"
-                    :class="
-                      n <= product.rating
-                        ? 'text-yellow-400 fill-current'
-                        : 'text-gray-400'
-                    "
+                  <ProductRating
+                    :model-value="product.rating || 0"
+                    :count="product.stock"
+                    read-only
+                    size="sm"
                   />
-                  <span class="text-gray-400 text-xs sm:text-sm ml-1 sm:ml-2"
-                    >({{ product.stock }})</span
-                  >
                 </div>
                 <span class="primary-text font-bold text-sm sm:text-base lg:text-lg"
                   >₱{{ product.price }}</span
@@ -691,6 +688,15 @@ const deleteHistoryConversation = async (event, promptId) => {
                 >
                   <ShoppingCartIcon class="h-4 w-4 sm:h-5 sm:w-5" />
                 </button>
+                <BuyNowButton
+                  :product-id="product.id"
+                  size="sm"
+                  :product-price="product.price"
+                  button-class="p-1.5 sm:p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+                  icon-class="h-4 w-4 sm:h-5 sm:w-5"
+                  :show-icon="true"
+                  label=""
+                />
               </div>
             </div>
           </Link>

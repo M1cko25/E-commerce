@@ -134,6 +134,12 @@
                   </span>
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap">
+                  <span v-if="order.payment_reference_number" class="font-mono text-sm">
+                    {{ order.payment_reference_number }}
+                  </span>
+                  <span v-else class="text-gray-400 text-sm">—</span>
+                </td>
+                <td class="px-6 py-4 whitespace-nowrap">
                   <span
                     :class="[
                       'px-2 py-1 text-xs rounded-full',
@@ -310,7 +316,7 @@ const props = defineProps({
   orders: Object,
 });
 
-const headers = ["Order ID", "Customer", "Date", "Total", "Payment Status", "Method", "Status", ""];
+const headers = ["Order ID", "Customer", "Date", "Total", "Payment Status", "Method", "Ref #", "Status", ""];
 
 const formatDateTime = (date) => {
   if (!date) return "No activity yet";
