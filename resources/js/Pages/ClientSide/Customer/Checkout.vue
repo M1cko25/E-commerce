@@ -737,8 +737,9 @@ const proceedToPayment = () => {
       `${selectedAddress.value.complete_address}, ${selectedAddress.value.city}, ${selectedAddress.value.province}, ${selectedAddress.value.zip_code}` : '';
 
     // Make a GET request to our backend to create the payment source
-    router.get(route('customer.qrPayment'), {
+    router.get(route('customer.payment'), {
       notes: notes.value,  // Add notes from the form
+      payment_method: paymentMethod.value,
       shipping_address: shippingAddress,  // Add formatted shipping address
       address_id: selectedAddress.value?.id // Send the selected address ID
     }, {
@@ -748,8 +749,9 @@ const proceedToPayment = () => {
         showPaymentModal.value = false;
         showSuccessModal.value = true;
       },
-      onError: () => {
+      onError: (error) => {
         isLoading.value = false;
+        console.log(error);
         alert('Failed to initialize payment. Please try again.');
       }
     });

@@ -135,61 +135,61 @@ class CheckoutController extends Controller
         ]);
 
         // If using QR payment method, redirect to the QR payment page
-        if ($request->input('payment_option') === 'qr_code') {
+        if ($request->input('payment_method') === 'gcash') {
             return redirect()->route('customer.qrPayment');
         }
 
         // Continue with original GCash payment flow (Paymongo)
-        try {
-            // Create Paymongo source
-            $data = [
-                'data' => [
-                    'attributes' => [
-                        'amount' => $total * 100, // Convert to cents
-                        'currency' => 'PHP',
-                        'type' => 'gcash',
-                        'redirect' => [
-                            'success' => route('customer.payment.success'),
-                            'failed' => route('customer.checkout'),
-                        ],
-                        'billing' => [
-                            'name' => $customer->first_name . ' ' . $customer->last_name,
-                            'email' => $customer->email,
-                            'phone' => $customer->phone,
-                            'address' => [
-                                'line1' => $address->complete_address,
-                                'city' => $address->city,
-                                'state' => $address->state,
-                                'postal_code' => $address->zip_code,
-                                'country' => 'PH'
-                            ]
-                        ]
-                    ]
-                ]
-            ];
+        // try {
+        //     // Create Paymongo source
+        //     $data = [
+        //         'data' => [
+        //             'attributes' => [
+        //                 'amount' => $total * 100, // Convert to cents
+        //                 'currency' => 'PHP',
+        //                 'type' => 'gcash',
+        //                 'redirect' => [
+        //                     'success' => route('customer.payment.success'),
+        //                     'failed' => route('customer.checkout'),
+        //                 ],
+        //                 'billing' => [
+        //                     'name' => $customer->first_name . ' ' . $customer->last_name,
+        //                     'email' => $customer->email,
+        //                     'phone' => $customer->phone,
+        //                     'address' => [
+        //                         'line1' => $address->complete_address,
+        //                         'city' => $address->city,
+        //                         'state' => $address->state,
+        //                         'postal_code' => $address->zip_code,
+        //                         'country' => 'PH'
+        //                     ]
+        //                 ]
+        //             ]
+        //         ]
+        //     ];
 
-            $response = Curl::to('https://api.paymongo.com/v1/sources')
-                ->withHeader('Content-Type: application/json')
-                ->withHeader('Accept: application/json')
-                ->withHeader('Authorization: Basic ' . base64_encode(env('AUTH_PAY') . ':'))
-                ->withData($data)
-                ->asJson()
-                ->post();
+        //     $response = Curl::to('https://api.paymongo.com/v1/sources')
+        //         ->withHeader('Content-Type: application/json')
+        //         ->withHeader('Accept: application/json')
+        //         ->withHeader('Authorization: Basic ' . base64_encode(env('AUTH_PAY') . ':'))
+        //         ->withData($data)
+        //         ->asJson()
+        //         ->post();
 
-            if (!$response || isset($response->errors)) {
-                throw new \Exception('Failed to create payment source');
-            }
+        //     if (!$response || isset($response->errors)) {
+        //         throw new \Exception('Failed to create payment source');
+        //     }
 
-            // Update session with the response ID
-            $paymentData = Session::get('payment_data');
-            $paymentData['response_id'] = $response->data->id;
-            Session::put('payment_data', $paymentData);
+        //     // Update session with the response ID
+        //     $paymentData = Session::get('payment_data');
+        //     $paymentData['response_id'] = $response->data->id;
+        //     Session::put('payment_data', $paymentData);
 
-            // Return the checkout URL in an Inertia response
-            return Inertia::location($response->data->attributes->redirect->checkout_url);
-        } catch (\Exception $e) {
-            return back()->withErrors(['error' => 'Payment initialization failed. Please try again.']);
-        }
+        //     // Return the checkout URL in an Inertia response
+        //     return Inertia::location($response->data->attributes->redirect->checkout_url);
+        // } catch (\Exception $e) {
+        //     return back()->withErrors(['error' => 'Payment initialization failed. Please try again.']);
+        // }
     }
 
     public function success()

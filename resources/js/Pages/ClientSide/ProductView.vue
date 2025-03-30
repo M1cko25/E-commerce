@@ -154,7 +154,7 @@
                 <button
               @click="addToCart"
               class="flex-1 flex items-center justify-center bg-navy-600 hover:bg-navy-700 text-white py-3 px-6 rounded-lg transition-colors"
-              :disabled="!isInStock"
+              :disabled="product.stock === 0"
             >
               <ShoppingCartIcon class="w-5 h-5 mr-2" />
               Add to Cart
@@ -379,6 +379,7 @@
                     <BuyNowButton
                       :product-id="product.id"
                       size="sm"
+                      :productPrice="product.price"
                       button-class="p-1.5 bg-red-600 hover:bg-red-700 text-white rounded-lg"
                       icon-class="h-4 w-4"
                       :show-icon="true"
@@ -658,7 +659,7 @@ const addToCart = () => {
     if (!selectedSize.value) {
       showSizeError.value = true;
       return;
-    }
+    } 
 
     if (availableKinds.value.length > 0 && !selectedKind.value) {
       showKindError.value = true;
