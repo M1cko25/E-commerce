@@ -149,8 +149,13 @@ class AiController extends Controller
             if ($categories->count() > 0) {
                 $info = "We offer products in these categories:\n\n";
                 foreach ($categories as $category) {
-                    $categoryLink = "https://drm-hardware.laravel.cloud/category-products/{$category->slug}";
-                    $info .= "- **{$category->name}**: [Browse all {$category->name}]({$categoryLink})\n";
+                    // Only create links for categories that actually have a slug
+                    if (!empty($category->slug)) {
+                        $categoryLink = "https://drm-hardware.laravel.cloud/category-products/{$category->slug}";
+                        $info .= "- **{$category->name}**: [Browse all {$category->name}]({$categoryLink})\n";
+                    } else {
+                        $info .= "- **{$category->name}**\n";
+                    }
                 }
 
                 $info .= "\nYou can click on any category link to browse products. Is there a specific category you're interested in?";
@@ -267,11 +272,34 @@ class AiController extends Controller
             if ($products->count() > 0) {
                 $info = "Here are some products that match your query (found in our database):\n\n";
                 foreach ($products as $product) {
-                    $productLink = "https://drm-hardware.laravel.cloud/product-list/{$product->slug}";
+                    // Only create links for products that actually have a slug
+                    if (!empty($product->slug)) {
+                        $productLink = "https://drm-hardware.laravel.cloud/product-list/{$product->slug}";
+                    } else {
+                        // Log this issue for admin awareness
+                        Log::warning("Product without slug found: ID {$product->id}, Name: {$product->name}");
+                        continue; // Skip products without slugs
+                    }
 
                     $info .= "**{$product->name}** - ₱{$product->price}\n";
-                    $info .= "Category: {$product->category->name} | Brand: {$product->brand->name}\n";
-                    $info .= "Description: " . substr($product->description, 0, 100) . "...\n";
+
+                    // Only include category and brand if they exist
+                    if ($product->category) {
+                        $info .= "Category: {$product->category->name}";
+                    }
+
+                    if ($product->brand) {
+                        $info .= $product->category ? " | " : "";
+                        $info .= "Brand: {$product->brand->name}";
+                    }
+
+                    $info .= "\n";
+
+                    // Only include description if it exists
+                    if (!empty($product->description)) {
+                        $info .= "Description: " . substr($product->description, 0, 100) . "...\n";
+                    }
+
                     $info .= "Stock: " . ($product->stock > 0 ? "{$product->stock} available" : "Out of stock") . "\n";
 
                     // Add specifications if available
@@ -279,13 +307,13 @@ class AiController extends Controller
                         $info .= "Specifications:\n";
                         foreach ($product->specifications as $spec) {
                             $value = '';
-                            if (isset($spec->pivot)) {
+                            if (isset($spec->pivot) && !empty($spec->pivot->value)) {
                                 $value = $spec->pivot->value;
-                            } elseif (method_exists($spec, 'value')) {
-                                $value = $spec->value;
+                            } elseif (method_exists($spec, 'value') && !empty($spec->value())) {
+                                $value = $spec->value();
                             }
 
-                            if (!empty($value)) {
+                            if (!empty($value) && !empty($spec->name)) {
                                 $info .= "• {$spec->name}: {$value}\n";
                             }
                         }
@@ -297,8 +325,13 @@ class AiController extends Controller
                 $info .= "These are actual products from our database. You can click on the links above to view product details or add items to your cart.";
                 return $info;
             } else {
-                // If no specific products were found, get some general product recommendations
-                $products = Product::with(['category', 'brand', 'specifications'])
+                // If no specific products were found based on the search terms,
+                // get some general product recommendations but limit the response
+                $products = Product::with(['category', 'brand'])
+                    ->whereNotNull('slug') // Ensure products have slugs
+                    ->where('slug', '!=', '')
+                    ->whereNotNull('product_images') // Ensure products have images
+                    ->take(5) // Limit to 5 products to keep the response focused
                     ->orderBy('stock', 'desc')
                     ->get();
 
@@ -306,37 +339,49 @@ class AiController extends Controller
                     $info = "I couldn't find specific products matching your query, but here are some popular items from our inventory:\n\n";
 
                     foreach ($products as $product) {
+                        if (empty($product->slug)) {
+                            continue; // Skip products without slugs
+                        }
+
                         $productLink = "https://drm-hardware.laravel.cloud/product-list/{$product->slug}";
 
                         $info .= "**{$product->name}** - ₱{$product->price}\n";
-                        $info .= "Category: {$product->category->name} | Brand: {$product->brand->name}\n";
-                        $info .= "Description: " . substr($product->description, 0, 100) . "...\n";
-                        $info .= "Stock: " . ($product->stock > 0 ? "{$product->stock} available" : "Out of stock") . "\n";
 
-                        // Add specifications if available
-                        if ($product->specifications && $product->specifications->count() > 0) {
-                            $info .= "Specifications:\n";
-                            foreach ($product->specifications as $spec) {
-                                $value = '';
-                                if (isset($spec->pivot)) {
-                                    $value = $spec->pivot->value;
-                                } elseif (method_exists($spec, 'value')) {
-                                    $value = $spec->value;
-                                }
-
-                                if (!empty($value)) {
-                                    $info .= "• {$spec->name}: {$value}\n";
-                                }
-                            }
+                        // Only include category and brand if they exist
+                        if ($product->category) {
+                            $info .= "Category: {$product->category->name}";
                         }
 
+                        if ($product->brand) {
+                            $info .= $product->category ? " | " : "";
+                            $info .= "Brand: {$product->brand->name}";
+                        }
+
+                        $info .= "\n";
+
+                        // Include stock information
+                        $info .= "Stock: " . ($product->stock > 0 ? "{$product->stock} available" : "Out of stock") . "\n";
                         $info .= "View Product: [Click here to view or buy]({$productLink})\n\n";
                     }
 
-                    $info .= "These are actual products from our database. You can click on the links above to view product details or add items to your cart. Try refining your search with specific product types, brands, or categories.";
+                    // Suggest browsing categories as an alternative
+                    $info .= "You may also want to browse our product categories:\n";
+                    $categories = DB::table('categories')
+                        ->select('name', 'slug')
+                        ->whereNotNull('slug')
+                        ->where('slug', '!=', '')
+                        ->take(5)
+                        ->get();
+
+                    foreach ($categories as $category) {
+                        $categoryLink = "https://drm-hardware.laravel.cloud/category-products/{$category->slug}";
+                        $info .= "- [Browse all {$category->name}]({$categoryLink})\n";
+                    }
+
                     return $info;
                 } else {
-                    return "I couldn't find any products in our database matching your query. Please try a different search term or browse our product categories.";
+                    // If we don't have any products at all, provide a generic message
+                    return "I couldn't find any products in our database matching your query. Please try browsing our product categories on the homepage.";
                 }
             }
         }
@@ -442,8 +487,24 @@ class AiController extends Controller
         // Convert italic formatting
         $text = preg_replace('/\*(.*?)\*/', '<em>$1</em>', $text);
 
-        // Convert markdown links to HTML with styled classes
-        $text = preg_replace('/\[([^\]]+)\]\(([^)]+)\)/', '<a href="$2" class="text-navy-600 underline hover:text-navy-800" target="_blank">$1</a>', $text);
+        // Convert markdown links to HTML with styled classes and ensure URLs are properly encoded
+        $text = preg_replace_callback('/\[([^\]]+)\]\(([^)]+)\)/', function($matches) {
+            $linkText = htmlspecialchars($matches[1]);
+            $url = htmlspecialchars($matches[2]);
+
+            // Ensure URL is properly formatted and has a protocol
+            if (!preg_match('/^https?:\/\//', $url)) {
+                $url = 'https://' . $url;
+            }
+
+            // Verify it's a valid URL
+            if (filter_var($url, FILTER_VALIDATE_URL)) {
+                return '<a href="' . $url . '" class="text-navy-600 underline hover:text-navy-800" target="_blank">' . $linkText . '</a>';
+            } else {
+                // If the URL is invalid, just return the text without making it a link
+                return $linkText;
+            }
+        }, $text);
 
         // Convert bullet points to simple formatted text rather than HTML lists
         $text = preg_replace('/^  • (.*?)$/m', '• $1', $text);
