@@ -675,7 +675,7 @@ const showEditModal = ref(false);
 const showAddressSelectionModal = ref(false);
 
 const getImageUrl = (imagePath) => {
-  if (!imagePath) return "/storage/default.jpg";
+  // if (!imagePath) return "/storage/default2.jpg";
   return imagePath.startsWith("http") ? imagePath : `/storage/${imagePath}`;
 };
 

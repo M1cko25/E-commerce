@@ -116,7 +116,7 @@
               <div v-for="item in order.items" :key="item.id" class="p-6">
                 <div class="flex items-start gap-4">
                   <img
-                    :src="item.image ? '/storage/' + item.image : '/storage/default.jpg'"
+                    :src="item.image ? '/storage/' + item.image : '/storage/default1.jpg'"
                     :alt="item.name"
                     class="w-20 h-20 rounded-lg object-cover bg-gray-100"
                   />
