@@ -135,7 +135,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 import { useForm } from "@inertiajs/vue3";
 import { Link } from "@inertiajs/vue3";
 import Sidebar from "../../../Components/Sidebar.vue";
@@ -157,6 +157,14 @@ const form = useForm({
   is_active: props.content.is_active,
   _method: "PUT",
 });
+
+const fetchImage = async (imagePath) => {
+  const response = await fetch(imagePath);
+  const blob = await response.blob();
+  const file = new File([blob], 'image.jpg', { type: blob.type }); // Change 'image.jpg' to the appropriate name
+  form.image = file; // Assign the File object to the form
+  createImagePreview(file); // Create a preview
+};
 
 const handleFileUpload = (event) => {
   const file = event.target.files[0];
@@ -197,6 +205,12 @@ const updateForm = () => {
     },
   });
 };
+
+onMounted(() => {
+  if (props.content.image) {
+    fetchImage(imagePreview.value); // Adjust the path as needed
+  }
+});
 </script>
 
 <style scoped>
