@@ -6,6 +6,7 @@ use Inertia\Inertia;
 use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Session;
 
 class AuthenticateController extends Controller
 {
@@ -42,6 +43,7 @@ class AuthenticateController extends Controller
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+        Session::flush();
 
         return redirect()->route('home');
     }

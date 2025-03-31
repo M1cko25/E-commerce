@@ -15,6 +15,7 @@ use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\DB;
 use App\Models\Product;
 use App\Http\Controllers\QRController;
+use Illuminate\Support\Facades\Log;
 
 class CheckoutController extends Controller
 {
@@ -138,7 +139,7 @@ class CheckoutController extends Controller
         if ($request->input('payment_method') === 'gcash') {
             return redirect()->route('customer.qrPayment');
         }
-
+        Log::info('Payment method: ' . $request->input('payment_method'));
         // Continue with original GCash payment flow (Paymongo)
         // try {
         //     // Create Paymongo source
