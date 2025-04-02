@@ -151,7 +151,7 @@ class AiController extends Controller
                 foreach ($categories as $category) {
                     // Only create links for categories that actually have a slug
                     if (!empty($category->slug)) {
-                        $categoryLink = "https://drm-hardware.laravel.cloud/category-products/{$category->slug}";
+                        $categoryLink = "https://drm-hardware.com/category-products/{$category->slug}";
                         $info .= "- **{$category->name}**: [Browse all {$category->name}]({$categoryLink})\n";
                     } else {
                         $info .= "- **{$category->name}**\n";
@@ -274,7 +274,7 @@ class AiController extends Controller
                 foreach ($products as $product) {
                     // Only create links for products that actually have a slug
                     if (!empty($product->slug)) {
-                        $productLink = "https://drm-hardware.laravel.cloud/product-list/{$product->slug}";
+                        $productLink = "https://drm-hardware.com/product-list/{$product->slug}";
                     } else {
                         // Log this issue for admin awareness
                         Log::warning("Product without slug found: ID {$product->id}, Name: {$product->name}");
@@ -343,7 +343,7 @@ class AiController extends Controller
                             continue; // Skip products without slugs
                         }
 
-                        $productLink = "https://drm-hardware.laravel.cloud/product-list/{$product->slug}";
+                        $productLink = "https://drm-hardware.com/product-list/{$product->slug}";
 
                         $info .= "**{$product->name}** - ₱{$product->price}\n";
 
@@ -374,7 +374,7 @@ class AiController extends Controller
                         ->get();
 
                     foreach ($categories as $category) {
-                        $categoryLink = "https://drm-hardware.laravel.cloud/category-products/{$category->slug}";
+                        $categoryLink = "https://drm-hardware.com/category-products/{$category->slug}";
                         $info .= "- [Browse all {$category->name}]({$categoryLink})\n";
                     }
 
