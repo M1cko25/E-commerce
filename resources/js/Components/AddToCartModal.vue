@@ -44,7 +44,7 @@
                 />
                 <div>
                   <h4 class="font-medium text-gray-900">{{ product?.name }}</h4>
-                  <p class="text-gray-600">${{ product?.price }}</p>
+                  <p class="text-gray-600">₱{{ product?.price }}</p>
                   <p class="text-sm text-gray-500">Quantity: {{ product?.quantity }}</p>
                 </div>
               </div>

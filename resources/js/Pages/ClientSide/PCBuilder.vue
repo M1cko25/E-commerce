@@ -223,7 +223,7 @@
                       <h4 class="font-medium text-gray-900">{{ option.name }}</h4>
                       <p class="text-sm text-gray-500">{{ option.specs }}</p>
                     </div>
-                    <span class="font-semibold text-navy-600">${{ option.price }}</span>
+                    <span class="font-semibold text-navy-600">₱{{ option.price }}</span>
                   </div>
                 </div>
               </div>

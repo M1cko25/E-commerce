@@ -19,8 +19,8 @@
               <h3 class="text-sm font-medium text-gray-700 mb-3">Price Range</h3>
               <div class="space-y-2">
                 <div class="flex items-center justify-between">
-                  <span class="text-sm text-gray-600">${{ form.priceRange[0] }}</span>
-                  <span class="text-sm text-gray-600">${{ form.priceRange[1] }}</span>
+                  <span class="text-sm text-gray-600">₱{{ form.priceRange[0] }}</span>
+                  <span class="text-sm text-gray-600">₱{{ form.priceRange[1] }}</span>
                 </div>
                 <input
                   type="range"
@@ -205,7 +205,7 @@
                     >
                   </div>
                   <span class="primary-text font-bold text-base sm:text-lg"
-                    >${{ product.price }}</span
+                    >₱{{ product.price }}</span
                   >
                 </div>
 

@@ -114,7 +114,7 @@
                 <!-- Price and Actions -->
                 <div class="flex flex-col items-end gap-2 min-w-[150px]">
                   <div class="text-right">
-                    <div class="font-medium text-gray-900">${{ formatPrice(order.price) }}</div>
+                    <div class="font-medium text-gray-900">₱{{ formatPrice(order.price) }}</div>
                     <div class="text-sm text-gray-500">Qty: {{ order.quantity }}</div>
                   </div>
                   <div class="flex gap-2">
