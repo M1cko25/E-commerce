@@ -94,7 +94,7 @@ const filterOptions = [
   { label: 'Pending', value: 'pending' },
   { label: 'Approved', value: 'approved' },
   { label: 'Rejected', value: 'rejected' },
-  { label: 'High Value (>$100)', value: 'high_value' },
+  { label: 'High Value (>₱100)', value: 'high_value' },
   { label: 'Recent (Last 7 Days)', value: 'recent' },
 ];
 

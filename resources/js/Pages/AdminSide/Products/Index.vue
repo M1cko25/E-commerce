@@ -280,8 +280,8 @@ const filterOptions = [
   { label: 'In Stock (>10)', value: 'in_stock' },
   { label: 'Out of Stock', value: 'out_of_stock' },
   { label: 'Recently Added', value: 'recent' },
-  { label: 'High Price (>$100)', value: 'high_price' },
-  { label: 'Budget (<$50)', value: 'budget' },
+  { label: 'High Price (>₱100)', value: 'high_price' },
+  { label: 'Budget (<₱50)', value: 'budget' },
 ];
 
 // Sort options
