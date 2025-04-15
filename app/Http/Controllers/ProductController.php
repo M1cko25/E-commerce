@@ -313,7 +313,7 @@ class ProductController extends Controller
     {
         try {
             // Delete product images from storage
-            if (!empty($product->product_images)) {
+            if (!empty($product->product_images) && is_array($product->product_images)) {
                 foreach ($product->product_images as $image) {
                     Storage::disk('public')->delete($image);
                 }
