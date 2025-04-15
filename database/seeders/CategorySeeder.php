@@ -15,7 +15,7 @@ class CategorySeeder extends Seeder
         Category::create([
             'name' => 'No Category',
             'slug' => 'no-category',
-            'description' => 'No Category is a generic category for products without a specific category name.',
+            'sku' => 'NO-CATEGORY-'. Str::random(5),
             'image' => 'images/no_category_image.png'
         ]);
     }

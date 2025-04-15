@@ -13,8 +13,7 @@ class BrandSeeder extends Seeder
         Brand::create([
             'name' => 'No Brand',
             'slug' => 'no-brand',
-            'description' => 'No Brand is a generic brand for products without a specific brand name.',
-            'logo' => 'images/no_brand_logo.png'
+            'image' => 'images/no_brand_logo.png'
         ]);
     }
 }
