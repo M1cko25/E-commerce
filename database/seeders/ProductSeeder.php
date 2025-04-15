@@ -12,19 +12,18 @@ class ProductSeeder extends Seeder
     public function run()
     {
         // Generate 20 random products
-        $products = [
-            'category_id' => 1,
-            'brand_id' => 1,
-            'name' => 'temporary name',
-            'slug' => 'temporary-slug'. rand(1, 1000),
-            'sku' => 'TEMporarySKU'. rand(1, 1000),
-            'description' => "description",
-            'price' => rand(100, 5000),
-            'stock' => rand(0, 100),
-            'product_images' => "images",
-        ];
         for ($i = 0; $i < 10; $i++) {
-            Product::create($products);
+            Product::create([
+                'category_id' => 1,
+                'brand_id' => 1,
+                'name' => 'temporary name',
+                'slug' => 'temporary-slug'. $i,
+                'sku' => 'TEMporarySKU'. $i,
+                'description' => "description",
+                'price' => rand(100, 5000),
+                'stock' => rand(0, 100),
+                'product_images' => "images",
+            ]);
         }
     }
 }
