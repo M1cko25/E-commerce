@@ -13,8 +13,8 @@ class ProductSeeder extends Seeder
     {
         // Generate 20 random products
         $products = [
-            'category_id' => Category::inRandomOrder()->first()->id,
-            'brand_id' => Brand::inRandomOrder()->first()->id,
+            'category_id' => 1,
+            'brand_id' => 1,
             'name' => 'temporary name',
             'slug' => 'temporary-slug'. rand(1, 1000),
             'sku' => 'TEMporarySKU'. rand(1, 1000),
