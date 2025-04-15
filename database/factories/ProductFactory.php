@@ -31,7 +31,6 @@ class ProductFactory extends Factory
             'description' => $this->faker->paragraphs(3, true),
             'price' => $this->faker->randomFloat(2, 100, 5000),
             'stock' => $this->faker->numberBetween(0, 100),
-            'warranty' => $this->faker->randomElement(['1 Year', '2 Years', '3 Years', '5 Years']),
             'product_images' => [$this->faker->imageUrl()],
         ];
     }
