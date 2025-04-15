@@ -25,7 +25,7 @@ class ProductFactory extends Factory
         return [
             'category_id' => $category->id,
             'brand_id' => $brand->id,
-            'name' => $name,
+            'name' => $this->faker->name,
             'slug' => Str::slug($name),
             'sku' => $sku, // Will generate something like "GHS12345ABC"
             'description' => $this->faker->paragraphs(3, true),
