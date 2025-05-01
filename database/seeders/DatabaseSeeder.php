@@ -18,15 +18,15 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
         ]);
         
-        // User::create([
-        //     'first_name' => 'Admin',
-        //     'last_name' => 'User',
-        //     'email' => 'adminuser@gmail.com',
-        //     'phone_number' => '09093206353',
-        //     'role' => 'Admin',
-        //     'status' => 'Inactive',
-        //     'password' => bcrypt('password123'),
-        // ]);
+        User::create([
+            'first_name' => 'Admin',
+            'last_name' => 'User',
+            'email' => 'adminuser@gmail.com',
+            'phone_number' => '09093206353',
+            'role' => 'Admin',
+            'status' => 'Inactive',
+            'password' => bcrypt('password123'),
+        ]);
 
         // User::factory()->create([
         //     'name' => 'Admin',
