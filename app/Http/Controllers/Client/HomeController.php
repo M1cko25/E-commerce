@@ -27,7 +27,7 @@ class HomeController extends Controller
                 ->toArray();
         }
         $exploreProducts = Product::with(['category', 'brand', 'specifications'])
-            ->take(8)
+            ->limit(10)
             ->get()
             ->map(function ($product) use ($wishlistProductIds) {
                 return [
@@ -42,11 +42,10 @@ class HomeController extends Controller
                     'image' => $product->product_images[0] ?? null,
                     'specifications' => $product->specifications
                 ];
-            })
-            ->random(8);
+            });
         $latestProducts = Product::with(['category', 'brand', 'specifications'])
             ->latest()
-            ->take(8)
+            ->limit(10)
             ->get()
             ->map(function ($product) use ($wishlistProductIds) {
                 return [
