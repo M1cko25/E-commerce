@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'https://drm-hardware.com'),
+    'url' => env('APP_URL', 'https://e-commerce-production-274f.up.railway.app'),
 
     /*
     |--------------------------------------------------------------------------

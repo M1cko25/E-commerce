@@ -7,7 +7,6 @@ use App\Models\CustomerAddresses;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Auth\Notifications\VerifyEmail;
-use App\Notifications\CustomVerifyEmail;
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -87,8 +86,7 @@ class Customer extends Authenticatable implements MustVerifyEmail
      */
     public function sendEmailVerificationNotification()
     {
-        // Create a custom verification notification with the production URL
-        $this->notify(new CustomVerifyEmail);
+        $this->notify(new VerifyEmail);
     }
 
 }

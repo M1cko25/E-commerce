@@ -22,35 +22,6 @@
           </p>
         </div>
 
-        <!-- Manual Verification Option -->
-        <div v-if="verificationLinkIssue" class="mb-6 p-4 bg-yellow-50 rounded-md text-yellow-700">
-          <p class="text-sm mb-2">
-            <strong>Having trouble with the verification link?</strong>
-          </p>
-          <p class="text-sm">
-            If you clicked the link in your email and saw an invalid signature error, you can try
-            manually verifying by entering your ID below:
-          </p>
-          <form @submit.prevent="manualVerify" class="mt-3">
-            <div class="flex items-center">
-              <input
-                v-model="manualId"
-                type="number"
-                placeholder="Enter your ID number"
-                class="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-l-md focus:outline-none focus:ring-navy-500 focus:border-navy-500"
-              />
-              <button
-                type="submit"
-                :disabled="manualVerifying"
-                class="px-4 py-2 text-sm text-white bg-navy-600 rounded-r-md hover:bg-navy-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-navy-500 disabled:opacity-50"
-              >
-                <Loader2 v-if="manualVerifying" class="animate-spin h-4 w-4" />
-                <span v-else>Verify</span>
-              </button>
-            </div>
-          </form>
-        </div>
-
         <!-- Resend Form -->
         <form @submit.prevent="resend" class="space-y-6">
           <div
@@ -113,7 +84,6 @@
 <script setup>
 import { Link, useForm } from "@inertiajs/vue3";
 import { Mail, Loader2 } from "lucide-vue-next";
-import { ref } from 'vue';
 
 defineProps({
   status: String,
@@ -123,11 +93,6 @@ defineProps({
   },
 });
 
-// For manual verification
-const verificationLinkIssue = ref(true); // Show by default since users are having issues
-const manualId = ref('');
-const manualVerifying = ref(false);
-
 const form = useForm({});
 
 const resend = () => {
@@ -136,16 +101,6 @@ const resend = () => {
 
 const openEmailClient = () => {
   window.location.href = "mailto:";
-};
-
-// Manual verification method
-const manualVerify = () => {
-  if (!manualId.value) return;
-
-  manualVerifying.value = true;
-
-  // Use our new route for manual verification
-  window.location.href = route('verification.manual', manualId.value);
 };
 </script>
 

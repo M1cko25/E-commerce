@@ -36,11 +36,6 @@ Route::middleware(['auth:customer'])->group(function () {
         ->middleware(['throttle:6,1'])
         ->name('verification.send');
 
-    // Manual verification fallback route
-    Route::get('/email/verify/{id}/manual-verification', [EmailVerificationController::class, 'manualVerify'])
-        ->middleware(['auth:customer'])
-        ->name('verification.manual');
-
 
     Route::middleware(['verified', EnsureCustomerIsAuthenticated::class])->group(function () {
         Route::get('/customer/register/process', [ClientRegisterController::class, 'show'])
