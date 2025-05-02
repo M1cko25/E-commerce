@@ -62,7 +62,7 @@ class AppServiceProvider extends ServiceProvider
             return 'The current password is incorrect.';
         });
 
-        // Force HTTPS in production
+        // Force HTTPS in production and configure URL correctly for verification links
         if (config('app.env') === 'production') {
             URL::forceScheme('https');
             URL::forceRootUrl(config('app.url'));
