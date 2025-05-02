@@ -17,13 +17,9 @@ class CustomVerifyEmail extends VerifyEmail
      */
     protected function verificationUrl($notifiable)
     {
-        // Always use HTTPS in production with the correct domain
-        $baseUrl = 'https://drm-hardware.com';
-
-        $routeName = 'verification.verify';
-
-        $url = URL::temporarySignedRoute(
-            $routeName,
+        // Generate the standard verification URL
+        $temporarySignedURL = URL::temporarySignedRoute(
+            'verification.verify',
             Carbon::now()->addMinutes(Config::get('auth.verification.expire', 60)),
             [
                 'id' => $notifiable->getKey(),
@@ -31,11 +27,17 @@ class CustomVerifyEmail extends VerifyEmail
             ]
         );
 
-        // Extract the path from the generated URL and append it to our production base URL
-        $parsedUrl = parse_url($url);
-        $path = $parsedUrl['path'] ?? '';
-        $query = isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '';
+        // Ensure we use the correct domain for production
+        if (config('app.env') === 'production') {
+            // Extract the path and query from the generated URL
+            $parsedUrl = parse_url($temporarySignedURL);
+            $path = $parsedUrl['path'] ?? '';
+            $query = isset($parsedUrl['query']) ? '?' . $parsedUrl['query'] : '';
 
-        return $baseUrl . $path . $query;
+            // Return the URL with the production domain
+            return 'https://drm-hardware.com' . $path . $query;
+        }
+
+        return $temporarySignedURL;
     }
 }
