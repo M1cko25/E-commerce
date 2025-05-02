@@ -84,6 +84,7 @@
 <script setup>
 import { Link, useForm } from "@inertiajs/vue3";
 import { Mail, Loader2 } from "lucide-vue-next";
+import { ref } from 'vue';
 
 defineProps({
   status: String,
@@ -93,6 +94,11 @@ defineProps({
   },
 });
 
+// For manual verification
+const verificationLinkIssue = ref(true); // Show by default since users are having issues
+const manualId = ref('');
+const manualVerifying = ref(false);
+
 const form = useForm({});
 
 const resend = () => {
@@ -101,6 +107,16 @@ const resend = () => {
 
 const openEmailClient = () => {
   window.location.href = "mailto:";
+};
+
+// Manual verification method
+const manualVerify = () => {
+  if (!manualId.value) return;
+
+  manualVerifying.value = true;
+
+  // Use our new route for manual verification
+  window.location.href = route('verification.manual', manualId.value);
 };
 </script>
 
